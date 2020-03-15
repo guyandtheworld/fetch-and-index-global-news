@@ -1,0 +1,28 @@
+version: "2"
+services:
+  indexing:
+    build:
+      context: .
+      dockerfile: indexing/Dockerfile
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=.keys/gcp_pubsub_storage.json
+    env_file:
+      - .keys/sql.env
+
+  news_aggregator:
+    build:
+      context: .
+      dockerfile: news_aggregator/Dockerfile
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=.keys/gcp_pubsub_storage.json
+    env_file:
+      - .keys/sql.env
+
+  body_extraction:
+    build:
+      context: .
+      dockerfile: body_extraction/Dockerfile
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=.keys/gcp_pubsub_storage.json
+    env_file:
+      - .keys/sql.env

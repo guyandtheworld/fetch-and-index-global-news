@@ -1,0 +1,404 @@
+{
+    "parameters": [
+        {
+            "hl": "en",
+            "gl": "US",
+            "ned": "us"
+        },
+        {
+            "hl": "ar",
+            "gl": "ME",
+            "ned": "ar_me"
+        },
+        {
+            "hl": "en-AU",
+            "gl": "AU",
+            "ned": "au"
+        },
+        {
+            "hl": "bn",
+            "gl": "BD",
+            "ned": "bn_bd"
+        },
+        {
+            "hl": "zh-CN",
+            "gl": "CN",
+            "ned": "cn"
+        },
+        {
+            "hl": "zh-HK",
+            "gl": "HK",
+            "ned": "nk"
+        },
+        {
+            "hl": "en-IN",
+            "gl": "IN",
+            "ned": "in"
+        },
+        {
+            "hl": "en-IN",
+            "gl": "IN",
+            "ned": "hi_in"
+        },
+        {
+            "hl": "en-IN",
+            "gl": "IN",
+            "ned": "ml_in"
+        },
+        {
+            "hl": "en-IN",
+            "gl": "IN",
+            "ned": "ta_in"
+        },
+        {
+            "hl": "en-IN",
+            "gl": "IN",
+            "ned": "te_in"
+        },
+        {
+            "hl": "id",
+            "gl": "ID",
+            "ned": "id_id"
+        },
+        {
+            "hl": "en",
+            "gl": "IL",
+            "ned": "en_il"
+        },
+        {
+            "hl": "iw",
+            "gl": "IL",
+            "ned": "iwil"
+        },
+        {
+            "hl": "ja",
+            "gl": "JP",
+            "ned": "jp"
+        },
+        {
+            "hl": "ar",
+            "gl": "LB",
+            "ned": "ar_lb"
+        },
+        {
+            "hl": "en",
+            "gl": "MY",
+            "ned": "en_my"
+        },
+        {
+            "hl": "en-NZ",
+            "gl": "NZ",
+            "ned": "nz"
+        },
+        {
+            "hl": "en",
+            "gl": "PK",
+            "ned": "en_pk"
+        },
+        {
+            "hl": "ar",
+            "gl": "SA",
+            "ned": "ar_sa"
+        },
+        {
+            "hl": "en",
+            "gl": "SG",
+            "ned": "en_sg"
+        },
+        {
+            "hl": "en",
+            "gl": "PH",
+            "ned": "en_ph"
+        },
+        {
+            "hl": "ko",
+            "gl": "KR",
+            "ned": "kr"
+        },
+        {
+            "hl": "zh-TW",
+            "gl": "TW",
+            "ned": "tw"
+        },
+        {
+            "hl": "th",
+            "gl": "TH",
+            "ned": "th_th"
+        },
+        {
+            "hl": "ar",
+            "gl": "AE",
+            "ned": "ar_ae"
+        },
+        {
+            "hl": "vi",
+            "gl": "VN",
+            "ned": "vi_vn"
+        },
+        {
+            "hl": "de",
+            "gl": "AT",
+            "ned": "de_at"
+        },
+        {
+            "hl": "nl",
+            "gl": "BE",
+            "ned": "nl_be"
+        },
+        {
+            "hl": "fr",
+            "gl": "BE",
+            "ned": "fr_be"
+        },
+        {
+            "hl": "en",
+            "gl": "BW",
+            "ned": "en_bw"
+        },
+        {
+            "hl": "bg",
+            "gl": "BG",
+            "ned": "bg_bg"
+        },
+        {
+            "hl": "cs",
+            "gl": "CZ",
+            "ned": "cs_cz"
+        },
+        {
+            "hl": "ar",
+            "gl": "E",
+            "ned": "ar_eg"
+        },
+        {
+            "hl": "en",
+            "gl": "ET",
+            "ned": "en_et"
+        },
+        {
+            "hl": "fr",
+            "gl": "FR",
+            "ned": "fr"
+        },
+        {
+            "hl": "de",
+            "gl": "DE",
+            "ned": "de"
+        },
+        {
+            "hl": "en",
+            "gl": "GH",
+            "ned": "en_gh"
+        },
+        {
+            "hl": "el",
+            "gl": "GR",
+            "ned": "el_gr"
+        },
+        {
+            "hl": "hu",
+            "gl": "HU",
+            "ned": "hu_hu"
+        },
+        {
+            "hl": "en",
+            "gl": "IE",
+            "ned": "en_ie"
+        },
+        {
+            "hl": "it",
+            "gl": "IT",
+            "ned": "it"
+        },
+        {
+            "hl": "en",
+            "gl": "KE",
+            "ned": "en_ke"
+        },
+        {
+            "hl": "lv",
+            "gl": "LV",
+            "ned": "lv_lv"
+        },
+        {
+            "hl": "lt",
+            "gl": "LT",
+            "ned": "lt_lt"
+        },
+        {
+            "hl": "fr",
+            "gl": "MA",
+            "ned": "fr_ma"
+        },
+        {
+            "hl": "en",
+            "gl": "NA",
+            "ned": "en_na"
+        },
+        {
+            "hl": "nl",
+            "gl": "NL",
+            "ned": "nl_nl"
+        },
+        {
+            "hl": "en",
+            "gl": "NG",
+            "ned": "en_ng"
+        },
+        {
+            "hl": "no",
+            "gl": "NO",
+            "ned": "no_no"
+        },
+        {
+            "hl": "pl",
+            "gl": "PL",
+            "ned": "pl_pl"
+        },
+        {
+            "hl": "pt-PT",
+            "gl": "PT",
+            "ned": "pt-PT_pt"
+        },
+        {
+            "hl": "ro",
+            "gl": "RO",
+            "ned": "ro_ro"
+        },
+        {
+            "hl": "ru",
+            "gl": "RU",
+            "ned": "ru_ru"
+        },
+        {
+            "hl": "fr",
+            "gl": "SN",
+            "ned": "fr_sn"
+        },
+        {
+            "hl": "sr",
+            "gl": "RS",
+            "ned": "sr_rs"
+        },
+        {
+            "hl": "sl",
+            "gl": "SI",
+            "ned": "sl_si"
+        },
+        {
+            "hl": "sk",
+            "gl": "SK",
+            "ned": "sk_sk"
+        },
+        {
+            "hl": "en",
+            "gl": "ZA",
+            "ned": "en_za"
+        },
+        {
+            "hl": "sv",
+            "gl": "SE",
+            "ned": "sv_se"
+        },
+        {
+            "hl": "fr",
+            "gl": "CH",
+            "ned": "fr_ch"
+        },
+        {
+            "hl": "de",
+            "gl": "CH",
+            "ned": "de_ch"
+        },
+        {
+            "hl": "en",
+            "gl": "TZ",
+            "ned": "en_tz"
+        },
+        {
+            "hl": "tr",
+            "gl": "TR",
+            "ned": "tr_tr"
+        },
+        {
+            "hl": "en",
+            "gl": "UG",
+            "ned": "en_ug"
+        },
+        {
+            "hl": "ru",
+            "gl": "UA",
+            "ned": "ru_ua"
+        },
+        {
+            "hl": "uk",
+            "gl": "U",
+            "ned": "uk_ua"
+        },
+        {
+            "hl": "en-GB",
+            "gl": "GB",
+            "ned": "uk"
+        },
+        {
+            "hl": "en",
+            "gl": "ZW",
+            "ned": "en_zw"
+        },
+        {
+            "hl": "es",
+            "gl": "AR",
+            "ned": "es_ar"
+        },
+        {
+            "hl": "en-CA",
+            "gl": "CA",
+            "ned": "ca"
+        },
+        {
+            "hl": "en-CA",
+            "gl": "CA",
+            "ned": "fr_ca"
+        },
+        {
+            "hl": "es",
+            "gl": "CL",
+            "ned": "es_cl"
+        },
+        {
+            "hl": "es",
+            "gl": "CO",
+            "ned": "es_co"
+        },
+        {
+            "hl": "es",
+            "gl": "CU",
+            "ned": "es_cu"
+        },
+        {
+            "hl": "es",
+            "gl": "MX",
+            "ned": "es_mx"
+        },
+        {
+            "hl": "es",
+            "gl": "PE",
+            "ned": "es_pe"
+        },
+        {
+            "hl": "en",
+            "gl": "US",
+            "ned": "es_us"
+        },
+        {
+            "hl": "es",
+            "gl": "VE",
+            "ned": "es_ve"
+        },
+        {
+            "hl": "pt-BR",
+            "gl": "BR",
+            "ned": "pt-BR_br"
+        }
+    ]
+}
