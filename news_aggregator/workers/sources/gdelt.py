@@ -73,7 +73,13 @@ class Scraper:
         # creating date pairs for given period
         date_pairs = []
         while self.date_from < self.date_to:
-            time_runner = self.date_from + timedelta(hours=8)
+            # time pairs in 8 hours if we're searching for large difference
+            # if smaller, we use 1 hour
+            if (self.date_to - self.date_from).seconds//3600 >= 6:
+                time_runner = self.date_from + timedelta(hours=6)
+            else:
+                time_runner = self.date_from + timedelta(hours=1)
+
             date_pairs.append(
                 [self.date_from.strftime('%Y%m%d%H%M%S'), time_runner.strftime(
                     '%Y%m%d%H%M%S')])
