@@ -50,14 +50,20 @@ def body_cleaning(text):
     """
     function to clean news content
     """
-
-    text = re.sub(r'\n|\xa0|\xad|\d+\.\d+\W?|\+', " ", text)
-    text = re.sub(r'\'', "", text)
+    text = re.sub('\<.*?\>', '', text)
+    text = re.sub('\n', '', text)
+    text = re.sub('\t', '', text)
+    text = re.sub('\r', '', text)
+    text = re.sub('\'s', '', text)
     text = re.sub(r'(By|by)\s\S+\s\S+', '', text)
-    text = re.sub(r'(Published|Updated):\s\d\d:\d\d\s\S{3}', "", text)
-    text = re.sub(r'\d{2}\s(January|February|March|April|May|June|July|August|September|October|November|December)\s\d{4}',
-                  "", text)
-    text = re.sub(r'FILE\sPHOTO:.*Photo', "", text)
+    text = re.sub(r'https?:\/\/\S+', '', text)
+    text = re.sub('www.\w+.com', '', text)
+    text = re.sub('(www)?.?\w+@\w+.com', '', text)
+    text = re.sub(
+        '([0-9]{1,2}[\.|/|\-][0-9]{1,2}[\.|/|\-][0-9]{1,4})', '', text)
+    text = re.sub(r'\xa0|\xad|\+', ' ', text)
+    text = re.sub('13', '', text)
+    text = re.sub('[^A-Za-z0-9,.\s]', '', text)
     return text
 
 
