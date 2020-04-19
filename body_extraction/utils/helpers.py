@@ -80,13 +80,14 @@ def extract_body():
 
     # fetch body from articles where status code is null
     query = """
-               SELECT story.uuid, story.url
-               FROM public.apis_story AS story
-               LEFT JOIN
-               public.apis_storybody AS body
-               ON story.uuid = body."storyID_id"
-               WHERE status_code IS NULL
-               LIMIT 10000;
+                SELECT story.uuid, story.url
+                FROM public.apis_story AS story
+                LEFT JOIN
+                (select distinct "storyID_id" from
+                public.apis_storybody) AS body
+                ON story.uuid = body."storyID_id"
+                WHERE body."storyID_id" IS NULL
+                LIMIT 10000
             """
 
     response = connect(query)
