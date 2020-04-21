@@ -2,6 +2,7 @@ import hashlib
 import logging
 import json
 import os
+import pandas as pd
 
 from data import source_processor
 
@@ -59,4 +60,20 @@ def process_company_json(record: dict, bucket):
     record["file"] = file_path
     processed_records = index_articles(record)
     os.remove(file_path)
+
+    # delete duplicates here
+    df = pd.DataFrame(processed_records,
+                      columns=["uuid", "entityID_id", "scenarioID_id",
+                               "title", "unique_hash", "url",
+                               "search_keyword", "published_date",
+                               "internal_source", "domain",
+                               "language", "source_country",
+                               "raw_file_source", "entry_created"])
+
+    before = df.shape
+    df.drop_duplicates(subset='url', keep="first", inplace=True)
+    after = df.shape
+    logging.info("Before: {}, After: {}".format(before, after))
+
+    processed_records = list(df.to_records(index=False))
     return processed_records
