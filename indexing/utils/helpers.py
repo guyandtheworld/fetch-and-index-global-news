@@ -4,7 +4,7 @@ import json
 import os
 import pandas as pd
 
-from data import source_processor
+from . import source_processor
 
 
 logging.basicConfig(level=logging.INFO)
