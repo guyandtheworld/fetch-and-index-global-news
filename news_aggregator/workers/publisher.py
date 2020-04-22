@@ -51,13 +51,15 @@ def publish(**params):
 
     ref = dict({"num_messages": 0})
 
-    data = {"path": "{}".format(params["file_path"]).encode("utf-8"),
+    data = {"path": params["file_path"],
             "entity_id": params["entity_id"],
             "scenario_id": params["scenario_id"],
             "history_processed": params["history_processed"],
             "last_tracked": params["last_tracked"],
             "storage_bucket": params["storage_bucket"],
             "source": params["source"]}
+
+    data = str(data).encode('utf-8')
 
     api_future = client.publish(topic_path, data=data)
     api_future.add_done_callback(get_callback(api_future, data, ref))
