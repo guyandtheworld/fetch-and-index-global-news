@@ -26,11 +26,14 @@ def process_company_json(record: dict, bucket):
 
     # convert to string
     json_data_string = blob.download_as_string()
+
+    # returns a list
     data = ndjson.loads(json_data_string)
+    logging.info("data storage length: {}".format(len(data)))
 
     processor = getattr(source_processor, record["source"])
     logging.info("processing: {}".format(record["source_file"]))
-    processed_records = processor(data, record["entity_id"],
+    processed_records = processor(data[0], record["entity_id"],
                                   record["scenario_id"],
                                   record["source_file"])
 

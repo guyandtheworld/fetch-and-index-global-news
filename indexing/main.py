@@ -13,7 +13,6 @@ from utils.postgres_utils import insert_stories
 logging.basicConfig(level=logging.INFO)
 
 
-DESTINATION_FOLDER = "temp"
 PROJECT_ID = os.getenv("PROJECT_ID", "alrt-ai")
 SUBSCRIPTION_NAME = os.getenv("SUBSCRIPTION_NAME", "index_articles")
 BUCKET_NAME = "news_staging_bucket"
@@ -51,6 +50,13 @@ def verify_format(params: dict):
     return params
 
 
+def test_index():
+    params = {}
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(BUCKET_NAME)
+    index_file(bucket, params)
+
+
 def index(event, context):
     """Background Cloud Function to be triggered by Pub/Sub.
     Args:
@@ -62,35 +68,25 @@ def index(event, context):
          `timestamp` field contains the publish time.
     """
 
-    print("""This Function was triggered by messageId {} published at {}
+    logging.info("""This Function was triggered by messageId {} published at {}
 
     """.format(context.event_id, context.timestamp))
 
     logging.info("loading storage client")
     storage_client = storage.Client()
 
-    if os.path.exists(DESTINATION_FOLDER):
-        shutil.rmtree(DESTINATION_FOLDER)
-
     bucket = storage_client.bucket(BUCKET_NAME)
-    os.mkdir(DESTINATION_FOLDER)
 
     if 'data' in event:
-        message = base64.b64decode(event['data']).decode('utf-8')
-        attributes = event['attributes']
+        str_params = base64.b64decode(event['data']).decode('utf-8')
+        params = json.loads(str_params)
     else:
-        print("no text in the message")
+        logging.info("no text in the message")
         return
 
-    params = {}
-    if attributes:
-        for key in attributes:
-            value = attributes.get(key)
-            params[key] = value
+    logging.info(params, type(params))
 
-    params["source_file"] = message
-
-    params = verify_format(params)
+    params["source_file"] = params["path"]
 
     if params:
         try:

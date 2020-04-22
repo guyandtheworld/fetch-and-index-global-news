@@ -30,7 +30,7 @@ def gdelt(data, entity_id, scenario_id, source_file):
                 article["domain"],
                 article["language"].lower(),
                 article["sourcecountry"].lower(),
-                source_file.decode("utf-8"),
+                source_file,
                 str(datetime.utcnow()),)
 
             articles.append(article)
@@ -61,7 +61,7 @@ def google_news(data, entity_id, scenario_id, source_file):
                 article["source"],
                 article["language"],
                 article["country"],
-                source_file.decode("utf-8"),
+                source_file,
                 str(datetime.utcnow()),)
 
             articles.append(article)

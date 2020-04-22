@@ -1,9 +1,30 @@
 # Article Indexing
 
-Define a new Cloud function
+Deploy on Cloud Function
 
-`gcloud functions deploy index --runtime python37 --trigger-topic indexing --memory 2048 --set-env-vars DB_NAME=alrt-ai-test,DB_USER=postgres,DB_PASSWORD=alrtai2019,DB_HOST=35.247.160.130,DB_PORT=5432 --timeout 540`
+`gcloud functions deploy index --runtime python37 --trigger-topic indexing --memory 2048 --set-env-vars DB_NAME=,DB_USER=,DB_PASSWORD=,DB_HOST=,DB_PORT= --timeout 540`
 
-See logs
+### See logs
 
 `gcloud functions logs read --limit 50`
+
+
+## Testing
+
+### Testing Locally
+
+* call function `test_index()`
+* add above params to the params
+* comment out `resp = insert_stories(results)`
+* run `python main.py -m test_index()`
+
+### Trigger function
+
+`gcloud pubsub topics publish indexing_test --message '{"source_file": "dd61a22b-b9a3-475c-8581-474411b17898-Naptha Storage/google_news/2020-04-21T07:47:08Z-2020-04-22T12:16:41Z.json",
+"entity_id": "dd61a22b-b9a3-475c-8581-474411b17898",
+"scenario_id": "d3ef747b-1c3e-4582-aecb-eacee1cababe",
+"history_processed": "true",
+"last_tracked": "2020-04-22T12:16:41Z",
+"storage_bucket": "news_staging_bucket",
+"source": "google_news"}'
+`

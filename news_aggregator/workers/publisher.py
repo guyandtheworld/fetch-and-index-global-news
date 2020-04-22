@@ -51,7 +51,7 @@ def publish(**params):
 
     ref = dict({"num_messages": 0})
 
-    data = {"path": params["file_path"],
+    data = {"source_file": params["file_path"],
             "entity_id": params["entity_id"],
             "scenario_id": params["scenario_id"],
             "history_processed": params["history_processed"],
