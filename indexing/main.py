@@ -84,10 +84,6 @@ def index(event, context):
         logging.info("no text in the message")
         return
 
-    logging.info(params, type(params))
-
-    params["source_file"] = params["path"]
-
     if params:
         try:
             response = index_file(bucket, params)
