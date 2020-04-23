@@ -1,17 +1,27 @@
 import concurrent.futures
-import re
 import logging
+import os
+import re
 import requests
 import time
-import uuid
+import psycopg2
+import pandas as pd
 import urllib3
+import uuid
 import warnings
 
-import pandas as pd
-
-from data.postgres_utils import connect, insert_values
-from datetime import datetime
 from dragnet import extract_content
+from datetime import datetime
+
+
+logging.basicConfig(level=logging.INFO)
+
+
+PROJECT_ID = os.getenv("PROJECT_ID", "alrt-ai")
+SUBSCRIPTION_NAME = os.getenv("SUBSCRIPTION_NAME", "body_extractor")
+CONNECTIONS = 100
+TIMEOUT = 5
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -21,8 +31,6 @@ def warn(*args, **kwargs):
 
 
 out = []
-CONNECTIONS = 100
-TIMEOUT = 5
 
 warnings.warn = warn
 
@@ -30,6 +38,71 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) \
            AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
+
+
+logging.basicConfig(level=logging.INFO)
+
+
+params = {
+    'database': os.environ["DB_NAME"],
+    'user': os.environ["DB_USER"],
+    'password': os.environ["DB_PASSWORD"],
+    'host': os.environ["DB_HOST"],
+    'port': os.environ["DB_PORT"],
+}
+
+
+def connect(query='SELECT version()'):
+    """ Connect to the PostgreSQL database server """
+    conn = None
+    results = []
+    try:
+        # read connection parameters
+
+        # connect to the PostgreSQL server
+        logging.info('Connecting to the PostgreSQL database...')
+        conn = psycopg2.connect(**params)
+
+        # create a cursor
+        cur = conn.cursor()
+
+        # execute a statement
+        logging.info('running : {}'.format(query))
+        cur.execute(query)
+
+        # display the PostgreSQL database server version
+        results = cur.fetchall()
+
+        # close the communication with the PostgreSQL
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.info(error)
+    finally:
+        if conn is not None:
+            conn.close()
+
+    return results
+
+
+def insert_values(sql, insert_list):
+    """
+    insert multiple vendors into the vendors table
+    """
+    conn = None
+    logging.info("inserting: {}".format(len(insert_list)))
+    try:
+        # connect to the PostgreSQL database
+        conn = psycopg2.connect(**params)
+        cur = conn.cursor()
+        cur.executemany(sql, insert_list)
+        conn.commit()
+        # close communication with the database
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.info(error)
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 def do_request(url):
@@ -86,8 +159,8 @@ def extract_body():
                 (select distinct "storyID_id" from
                 public.apis_storybody) AS body
                 ON story.uuid = body."storyID_id"
-                WHERE body."storyID_id" IS NULL
-                LIMIT 10000
+                WHERE body."storyID_id" IS not NULL
+                LIMIT 3000
             """
 
     response = connect(query)
@@ -120,8 +193,38 @@ def extract_body():
             VALUES(%s, %s, %s, %s, %s);
             """
 
-    insert_values(query, values)
+    # insert_values(query, values)
 
     logging.info(f'Took {time2-time1:.2f} s')
     logging.info(pd.Series(out).value_counts())
     return True
+
+
+def test_body_extraction():
+    extract_body()
+
+
+def body_extraction(event, context):
+    """Background Cloud Function to be triggered by Pub/Sub.
+    Args:
+         event (dict):  The dictionary with data specific to this type of
+         event. The `data` field contains the PubsubMessage message. The
+         `attributes` field will contain custom attributes if there are any.
+         context (google.cloud.functions.Context): The Cloud Functions event
+         metadata. The `event_id` field contains the Pub/Sub message ID. The
+         `timestamp` field contains the publish time.
+    """
+
+    logging.info("""This Function was triggered by messageId {} published at {}
+
+    """.format(context.event_id, context.timestamp))
+
+    logging.info("loading storage client")
+
+    try:
+        response = extract_body()
+        logging.info(response)
+        logging.info("written & ack-ed")
+    except Exception as e:
+        logging.info(
+            "message processing failed. up for retry. - " + str(e))

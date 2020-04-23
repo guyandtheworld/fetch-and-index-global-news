@@ -1,0 +1,7 @@
+dnspython
+pandas
+lxml
+Cython
+psycopg2-binary
+numpy
+dragnet
