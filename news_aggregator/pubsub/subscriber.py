@@ -21,10 +21,6 @@ PROJECT_ID = os.getenv("PROJECT_ID", "alrt-ai")
 SUBSCRIPTION_NAME = os.getenv("SUBSCRIPTION_NAME", "news_aggregator")
 
 
-client = pubsub_v1.SubscriberClient()
-subscription_path = client.subscription_path(PROJECT_ID, SUBSCRIPTION_NAME)
-
-
 def verify_format(params: dict):
     keys = ["entity_id", "entity_name", "common_names",
             "scenario_id", "source", "date_to", "date_from",
@@ -45,6 +41,9 @@ def sub():
     """
     Receives messages from a Pub/Sub subscription.
     """
+
+    client = pubsub_v1.SubscriberClient()
+    subscription_path = client.subscription_path(PROJECT_ID, SUBSCRIPTION_NAME)
 
     def callback(message):
         logging.info(

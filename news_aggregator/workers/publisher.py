@@ -59,7 +59,7 @@ def publish(**params):
             "storage_bucket": params["storage_bucket"],
             "source": params["source"]}
 
-    data = str(data).encode('utf-8')
+    data = str(json.dumps(data)).encode('utf-8')
 
     api_future = client.publish(topic_path, data=data)
     api_future.add_done_callback(get_callback(api_future, data, ref))
