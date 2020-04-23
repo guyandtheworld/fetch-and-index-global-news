@@ -1,0 +1,3 @@
+dnspython
+pandas
+psycopg2-binary
