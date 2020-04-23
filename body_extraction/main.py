@@ -6,19 +6,23 @@ import requests
 import time
 import psycopg2
 import pandas as pd
+import sys
 import urllib3
 import uuid
 import warnings
 
-from dragnet import extract_content
-from datetime import datetime
+sys.path.insert(1, os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "libs"
+))
+
+from dragnet import extract_content  # noqa
+from datetime import datetime  # noqa
 
 
 logging.basicConfig(level=logging.INFO)
 
 
-PROJECT_ID = os.getenv("PROJECT_ID", "alrt-ai")
-SUBSCRIPTION_NAME = os.getenv("SUBSCRIPTION_NAME", "body_extractor")
 CONNECTIONS = 100
 TIMEOUT = 5
 
@@ -159,7 +163,7 @@ def extract_body():
                 (select distinct "storyID_id" from
                 public.apis_storybody) AS body
                 ON story.uuid = body."storyID_id"
-                WHERE body."storyID_id" IS not NULL
+                WHERE body."storyID_id" IS NULL
                 LIMIT 3000
             """
 
@@ -193,7 +197,7 @@ def extract_body():
             VALUES(%s, %s, %s, %s, %s);
             """
 
-    # insert_values(query, values)
+    insert_values(query, values)
 
     logging.info(f'Took {time2-time1:.2f} s')
     logging.info(pd.Series(out).value_counts())
