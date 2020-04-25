@@ -24,6 +24,7 @@ def insert_stories(stories):
           search_keyword, published_date, internal_source, "domain",
           "language", source_country, raw_file_source, entry_created)
           VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+          ON CONFLICT DO NOTHING
           """
 
     conn = None
