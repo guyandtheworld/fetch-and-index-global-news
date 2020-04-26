@@ -22,6 +22,22 @@ PROJECT_ID = os.getenv("PROJECT_ID", "alrt-ai")
 SUBSCRIPTION_NAME = os.getenv("SUBSCRIPTION_NAME", "news_aggregator")
 
 
+def verify_format(params: dict):
+    keys = ["entity_id", "entity_name", "common_names",
+            "scenario_id", "source", "date_to", "date_from",
+            "storage_bucket", "history_processed"]
+
+    for key in keys:
+        if key not in params:
+            return None
+
+    params["common_names"] = json.loads(params["common_names"])
+    params["source"] = json.loads(params["source"])
+    params["history_processed"] = json.loads(params["history_processed"])
+
+    return params
+
+
 def sub():
     """
     Receives messages from a Pub/Sub subscription.
@@ -37,9 +53,7 @@ def sub():
             )
         )
 
-        str_params = base64.b64decode(message.data).decode('utf-8')
-        params = json.loads(str_params)
-
+        params = verify_format(json.loads(message.data))
         try:
             start_aggregation(params)
             message.ack()
