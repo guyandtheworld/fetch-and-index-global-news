@@ -47,7 +47,7 @@ class Aggregator:
         source_keys = {x: self.params[x] for x in keys}
 
         for source in self.params["source"]:
-            i = importlib.import_module("sources.{}".format(source))
+            i = importlib.import_module("workers.sources.{}".format(source))
             if not i.Scraper.SCRAPER_ACTIVE:
                 continue
             logging.info("loading source: " + source)
