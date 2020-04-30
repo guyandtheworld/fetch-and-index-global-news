@@ -10,6 +10,9 @@ logging.basicConfig(level=logging.INFO)
 
 
 def test_aggregate():
+    """
+    Function to test if news aggregator works
+    """
     params = {"entity_id": "f36ca121-8dca-4bbe-9f48-868b07e34b83",
               "entity_name": "Naphtha transportation",
               "common_names": ["Naphtha transportation"],
@@ -18,11 +21,13 @@ def test_aggregate():
               "date_from": "2019-04-29T05:22:25Z",
               "date_to": "2020-04-29T06:41:08Z",
               "storage_bucket": "news_staging_bucket",
-              "history_processed": True}
+              "history_processed": True,
+              "write": True}
 
     aggregator = Aggregator(params)
     aggregator.load_sources()
-    # aggregator.write_data()
+    if "write" not in params:
+        aggregator.write_data()
 
 
 def aggregate(event, context):
@@ -52,7 +57,8 @@ def aggregate(event, context):
             logging.info("starting aggregation")
             aggregator = Aggregator(params)
             aggregator.load_sources()
-            aggregator.write_data()
+            if "write" not in params:
+                aggregator.write_data()
         except Exception as e:
             logging.info(
                 "message processing failed. up for retry. - " + str(e))
