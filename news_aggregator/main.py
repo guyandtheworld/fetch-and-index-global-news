@@ -30,7 +30,7 @@ def test_aggregate():
         aggregator.write_data()
 
 
-def aggregate(event, context):
+def news_aggregator(event, context):
     """Background Cloud Function to be triggered by Pub/Sub.
     Args:
          event (dict):  The dictionary with data specific to this type of

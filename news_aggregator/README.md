@@ -16,8 +16,8 @@ gcloud pubsub topics publish news_aggregator_test --message '{
     "date_from": "2019-04-29T05:22:25Z",
     "date_to": "2020-04-29T06:41:08Z",
     "storage_bucket": "news_staging_bucket",
-    "history_processed": True,
-    "write": True
+    "history_processed": true,
+    "write": true
 }'
 ```
 
