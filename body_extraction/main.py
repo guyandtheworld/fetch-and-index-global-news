@@ -164,7 +164,7 @@ def extract_body():
                 public.apis_storybody) AS body
                 ON story.uuid = body."storyID_id"
                 WHERE body."storyID_id" IS NULL
-                LIMIT 3000
+                LIMIT 1500
             """
 
     response = connect(query)
