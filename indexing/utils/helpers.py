@@ -51,5 +51,5 @@ def process_company_json(record: dict, bucket):
     after = df.shape
     logging.info("Before: {}, After: {}".format(before, after))
 
-    processed_records = list(df.to_records(index=False))
+    processed_records = df.values.tolist()
     return processed_records
