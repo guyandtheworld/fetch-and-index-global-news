@@ -60,6 +60,8 @@ def insertion(event, context):
 
     """.format(context.event_id, context.timestamp))
 
+    logging.info("loading storage client")
+
     # data could be wrong format
     if 'data' in event:
         str_params = base64.b64decode(event['data']).decode('utf-8')
