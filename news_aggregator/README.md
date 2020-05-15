@@ -2,7 +2,9 @@
 
 ## Deploy on Cloud Function
 
-`gcloud functions deploy news_aggregator --runtime python37 --trigger-topic news_aggregator_test --memory 2048 --set-env-vars DB_NAME=,DB_USER=,DB_PASSWORD=,DB_HOST=,DB_PORT= --timeout 540 --max-instances 10`
+```
+gcloud functions deploy news_aggregator --runtime python37 --trigger-topic news_aggregator_test --memory 2048 --set-env-vars DB_NAME=,DB_USER=,DB_PASSWORD=,DB_HOST=,DB_PORT= --timeout 540 --max-instances 10
+```
 
 ## Sample Publish Data Format
 

@@ -1,6 +1,8 @@
+import base64
 import logging
 import os
 import psycopg2
+import json
 
 
 logging.basicConfig(level=logging.INFO)
@@ -16,7 +18,7 @@ params = {
 
 def insert_into_database(query, values):
     """
-    insert multiple vendors into the vendors table
+    insert values we get on the payload into the database
     """
 
     conn = None
@@ -32,12 +34,12 @@ def insert_into_database(query, values):
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
         logging.info(error)
-        resp = {"status": "error",
+        resp = {"success": False,
                 "error": error}
     finally:
         if conn is not None:
             conn.close()
-        resp = {"status": "success",
+        resp = {"success": True,
                 "data": "inserted {} articles into db".format(len(values))
                 }
     return resp
@@ -53,13 +55,28 @@ def insertion(event, context):
          metadata. The `event_id` field contains the Pub/Sub message ID. The
          `timestamp` field contains the publish time.
     """
-    import base64
 
-    print("""This Function was triggered by messageId {} published at {}
+    logging.info("""This Function was triggered by messageId {} published at {}
+
     """.format(context.event_id, context.timestamp))
 
+    logging.info("loading storage client")
+
+    # data could be wrong format
     if 'data' in event:
-        name = base64.b64decode(event['data']).decode('utf-8')
+        str_params = base64.b64decode(event['data']).decode('utf-8')
+        data = json.loads(str_params)
     else:
-        name = 'World'
-    print('Hello {}!'.format(name))
+        logging.info("no text in the message")
+        return
+
+    if data:
+        response = insert_into_database(data["query"], data["data"])
+        logging.info(response)
+        if response["success"]:
+            logging.info(
+                "{} written & ack-ed".format(params["source_file"]))
+        else:
+            logging.info("can't ack message")
+    else:
+        logging.info("message format broken")
