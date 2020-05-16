@@ -69,7 +69,3 @@ def publish(**params):
         logging.info("Published {} message(s).".format(ref["num_messages"]))
 
     return RESULT
-
-
-if __name__ == "__main__":
-    publish()

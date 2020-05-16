@@ -6,7 +6,7 @@ import os
 from google.cloud import storage
 
 from utils.helpers import process_company_json
-from utils.postgres_utils import insert_stories
+from utils.publisher import publish_stories
 
 
 logging.basicConfig(level=logging.INFO)
@@ -25,7 +25,7 @@ def index_file(bucket, params: dict):
     if isinstance(results, list) and len(results) > 0:
         logging.info("writing {} articles, from entity {} into db".format(
             len(results), params['entity_id']))
-        resp = insert_stories(results)
+        resp = publish_stories(results)
     elif isinstance(results, list):
         resp = {"status": "success",
                 "data": "no articles to insert"}
@@ -50,7 +50,13 @@ def verify_format(params: dict):
 
 
 def test_index():
-    params = {}
+    params = {"source_file": "3f210a21-fa94-499e-8b60-ada4f9ef5cf6-COVID/google_news/2020-05-15T05:22:10Z-2020-05-15T11:22:07Z.json",
+              "entity_id": "3f210a21-fa94-499e-8b60-ada4f9ef5cf6",
+              "scenario_id": "d3ef747b-1c3e-4582-aecb-eacee1cababe",
+              "history_processed": "true",
+              "last_tracked": "2020-04-22T12:16:41Z",
+              "storage_bucket": "news_staging_bucket",
+              "source": "google_news"}
     storage_client = storage.Client()
     bucket = storage_client.bucket(BUCKET_NAME)
     index_file(bucket, params)
@@ -87,7 +93,7 @@ def index(event, context):
         try:
             response = index_file(bucket, params)
             logging.info(response)
-            if response["status"] == "success":
+            if response:
                 logging.info(
                     "{} written & ack-ed".format(params["source_file"]))
             else:
@@ -97,3 +103,6 @@ def index(event, context):
                 "message processing failed. up for retry. - " + str(e))
     else:
         logging.info("message format broken")
+
+
+test_index()
