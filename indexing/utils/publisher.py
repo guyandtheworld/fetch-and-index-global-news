@@ -9,6 +9,7 @@ from google.cloud import pubsub_v1
 PROJECT_ID = os.getenv("PROJECT_ID", "alrt-ai")
 TOPIC_ID = os.getenv("PUBLISHER_NAME", "insertion_test")
 RESULT = False
+SOURCE = "indexing"
 
 logging.basicConfig(level=logging.INFO)
 
@@ -42,7 +43,7 @@ def get_callback(api_future, data, ref):
     return callback
 
 
-def insert_stories(stories):
+def publish_stories(values):
     """
     insert multiple vendors into the story table
     by sending it over to the insertion service
@@ -59,22 +60,27 @@ def insert_stories(stories):
 
     payload = {}
     payload["query"] = query
-    payload["data"] = stories
-
-    payload = json.dumps(payload)
+    payload["source"] = SOURCE
 
     client = pubsub_v1.PublisherClient()
     topic_path = client.topic_path(PROJECT_ID, TOPIC_ID)
 
     ref = dict({"num_messages": 0})
 
-    data = str(json.dumps(payload)).encode('utf-8')
+    # deliver only maximum of 1000 stories at once
+    for i in range(0, len(values), 1000):
+        sliced_values = values[i:i+1000]
 
-    api_future = client.publish(topic_path, data=data)
-    api_future.add_done_callback(get_callback(api_future, data, ref))
+        payload["data"] = sliced_values
 
-    while api_future.running():
-        time.sleep(0.5)
-        logging.info("Published {} message(s).".format(ref["num_messages"]))
+        data = str(json.dumps(payload)).encode('utf-8')
+
+        api_future = client.publish(topic_path, data=data)
+        api_future.add_done_callback(get_callback(api_future, data, ref))
+
+        while api_future.running():
+            time.sleep(0.5)
+            logging.info("Published {} message(s).".format(
+                ref["num_messages"]))
 
     return RESULT

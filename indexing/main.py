@@ -6,7 +6,7 @@ import os
 from google.cloud import storage
 
 from utils.helpers import process_company_json
-from utils.postgres_utils import insert_stories
+from utils.publisher import publish_stories
 
 
 logging.basicConfig(level=logging.INFO)
@@ -25,7 +25,7 @@ def index_file(bucket, params: dict):
     if isinstance(results, list) and len(results) > 0:
         logging.info("writing {} articles, from entity {} into db".format(
             len(results), params['entity_id']))
-        resp = insert_stories(results)
+        resp = publish_stories(results)
     elif isinstance(results, list):
         resp = {"status": "success",
                 "data": "no articles to insert"}

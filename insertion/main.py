@@ -60,8 +60,6 @@ def insertion(event, context):
 
     """.format(context.event_id, context.timestamp))
 
-    logging.info("loading storage client")
-
     # data could be wrong format
     if 'data' in event:
         str_params = base64.b64decode(event['data']).decode('utf-8')
@@ -70,12 +68,14 @@ def insertion(event, context):
         logging.info("no text in the message")
         return
 
+    logging.info("Inserting {} values from the {} service".format(
+        len(data["data"]), data["source"]))
+
     if data:
         response = insert_into_database(data["query"], data["data"])
         logging.info(response)
         if response["success"]:
-            logging.info(
-                "{} written & ack-ed".format(params["source_file"]))
+            logging.info(response["data"])
         else:
             logging.info("can't ack message")
     else:
