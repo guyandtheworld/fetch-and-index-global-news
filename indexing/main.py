@@ -103,6 +103,3 @@ def index(event, context):
                 "message processing failed. up for retry. - " + str(e))
     else:
         logging.info("message format broken")
-
-
-test_index()
