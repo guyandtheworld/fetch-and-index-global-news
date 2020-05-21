@@ -2,6 +2,15 @@ import hashlib
 import uuid
 
 from datetime import datetime
+from langdetect import detect
+
+
+def isEnglish(text):
+    lang = detect(text)
+    if lang == 'en':
+        return True
+    else:
+        return False
 
 
 def gdelt(data, entity_id, scenario_id, source_file):
@@ -16,6 +25,10 @@ def gdelt(data, entity_id, scenario_id, source_file):
         for article in data[key]:
             unique_hash = hashlib.md5(article['url'].encode()).hexdigest()
             pub_date = datetime.strptime(article["seendate"], date_format)
+
+            # if language is not english, don't index
+            if not isEnglish(article["title"]):
+                continue
 
             article = (
                 str(uuid.uuid4()),
@@ -46,6 +59,11 @@ def google_news(data, entity_id, scenario_id, source_file):
     articles = []
     for key in data.keys():
         for article in data[key]:
+
+            # if language is not english, don't index
+            if not isEnglish(article["title"]):
+                continue
+
             unique_hash = hashlib.md5(article['url'].encode()).hexdigest()
             pub_date = datetime.strptime(article["pubDate"], date_format)
             article = (

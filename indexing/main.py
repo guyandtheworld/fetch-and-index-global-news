@@ -12,8 +12,6 @@ from utils.publisher import publish_stories
 logging.basicConfig(level=logging.INFO)
 
 
-PROJECT_ID = os.getenv("PROJECT_ID", "alrt-ai")
-SUBSCRIPTION_NAME = os.getenv("SUBSCRIPTION_NAME", "index_articles")
 BUCKET_NAME = "news_staging_bucket"
 
 

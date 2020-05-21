@@ -40,7 +40,7 @@ def insert_into_database(query, values):
         if conn is not None:
             conn.close()
         resp = {"success": True,
-                "data": "inserted {} articles into db".format(len(values))
+                "data": "inserted {} items into db".format(len(values))
                 }
     return resp
 
