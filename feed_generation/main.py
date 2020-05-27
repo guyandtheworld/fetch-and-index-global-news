@@ -1,10 +1,10 @@
 import logging
 import pandas as pd
-import numpy as np
 
 from utils import (connection,
                    add_to_dataframe,
-                   generate_story_entities)
+                   generate_story_entities,
+                   hotness)
 
 
 logging.basicConfig(level=logging.INFO)
@@ -97,6 +97,19 @@ def join_entities(articles):
     return articles
 
 
+def join_hotness(articles, bucket=False, sentiment=True, mode="portfolio"):
+    """
+    Generate different types of score for articles
+    """
+
+    articles["published_date"] = articles["published_date"].dt.tz_localize(
+        None)
+    articles["hotness"] = articles.apply(lambda x: hotness(
+        x, bucket, sentiment, mode), axis=1)
+
+    return articles
+
+
 def generate_feed():
     """
     Take new stories and generate the feed out of it.
@@ -113,13 +126,15 @@ def generate_feed():
     articles = pd.read_sql(query, connection)
     logging.info("articles: {}".format(articles.shape[0]))
 
+    articles['uuid'] = articles['uuid'].apply(str)
+    articles['entityID_id'] = articles['entityID_id'].apply(str)
+
     articles = join_body(articles)
     articles = join_sentiment(articles, title=True)
     articles = join_sentiment(articles, title=False)
     articles = join_cluster(articles)
     articles = join_entities(articles)
-    # join_scores()
-    # join_hotness()
+    articles = join_hotness(articles)
 
 
 generate_feed()

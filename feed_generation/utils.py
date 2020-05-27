@@ -1,9 +1,9 @@
 import logging
-import psycopg2
+import math
 import os
 import pandas as pd
 
-from pandas.io import sql
+from datetime import datetime
 from sqlalchemy import create_engine
 
 logging.basicConfig(level=logging.INFO)
@@ -22,39 +22,21 @@ conn_str = f'postgresql://{params["user"]}:{params["password"]}@{params["host"]}
 connection = create_engine(conn_str)
 
 
-def connect(query='SELECT version()'):
-    """ Connect to the PostgreSQL database server """
-    conn = None
-    results = []
-    try:
-        # read connection parameters
+KEYWORD_SCORE = 20
 
-        # connect to the PostgreSQL server
-        logging.info('Connecting to the PostgreSQL database...')
-        conn = psycopg2.connect(**params)
 
-        # create a cursor
-        cur = conn.cursor()
-
-        # execute a statement
-        logging.info('running : {}'.format(query))
-        cur.execute(query)
-
-        # display the PostgreSQL database server version
-        results = cur.fetchall()
-
-        # close the communication with the PostgreSQL
-        cur.close()
-    except (Exception, psycopg2.DatabaseError) as error:
-        logging.info(error)
-    finally:
-        if conn is not None:
-            conn.close()
-
-    return results
+def similarity(str1, str2):
+    if str1 in str2:
+        return KEYWORD_SCORE
+    else:
+        return 0
 
 
 def add_to_dataframe(articles, query):
+    """
+    Fetch entities of an article and insert that into
+    the Dataframe.
+    """
     ids_str = "', '".join(articles["uuid"].apply(str).values)
     ids_str = "('{}')".format(ids_str)
 
@@ -88,3 +70,61 @@ def generate_story_entities(entities):
         story_map[i] = temp.drop(['storyID_id'], axis=1).to_dict('records')
 
     return story_map
+
+
+def presence_score(keyword, text, analytics_type):
+    """
+    gives score to the article based on the presence of
+    relevant keyword in the content and the body
+    """
+    score = similarity(keyword, text)
+
+    if analytics_type == 'title':
+        return score * 2
+    else:
+        return score
+
+
+def hotness(article, bucket, sentiment, mode):
+    """
+    Adding to score if the company term is in title
+    * domain score - domain reliability
+    """
+    s = article["title_sentiment"]["compound"]
+
+    if mode == "portfolio":
+        keyword = article["search_keyword"]
+    else:
+        keyword = article["name"]
+
+    if sentiment:
+        # negative news
+        s = -s * 50
+
+    # presence of keyword in title
+    s += presence_score(keyword.lower(),
+                        article["title"].lower(),
+                        "title")
+
+    # presence of keyword in body
+    s += presence_score(keyword.lower(),
+                        article["body"].lower(),
+                        "body")
+
+    if bucket:
+        # bucket score + source score
+        s += (article["grossScore"] * 100)
+        s += (article["sourceScore"] * 100)
+
+    baseScore = math.log(max(s, 1))
+
+    timeDiff = (datetime.now() - article["published_date"]).days
+
+    if (timeDiff >= 1):
+        x = timeDiff - 1
+        decayedBaseScore = baseScore * math.exp(-.01 * x * x)
+
+    scores = {"general_hotness": round(baseScore, 3),
+              "general_decayed_hotness": round(decayedBaseScore, 3)}
+
+    return scores
