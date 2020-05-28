@@ -1,8 +1,9 @@
 import logging
 import pandas as pd
 
-from utils import (connection,
-                   add_to_dataframe,
+from utils import (add_to_dataframe,
+                   connection,
+                   format_bucket_scores,
                    generate_story_entities,
                    hotness)
 
@@ -21,7 +22,7 @@ def join_body(articles):
             GROUP BY "storyID_id"
             """
 
-    return add_to_dataframe(articles, query)
+    return add_to_dataframe(articles, query, name="body")
 
 
 def join_sentiment(articles, title=True):
@@ -31,18 +32,20 @@ def join_sentiment(articles, title=True):
 
     if title:
         query = """
-                select "storyID_id", (array_agg(sentiment))[1] as title_sentiment
-                from apis_storysentiment WHERE "storyID_id" in {}
-                AND is_headline = false GROUP BY "storyID_id"
+                select "storyID_id", (array_agg(sentiment))[1]
+                as title_sentiment from apis_storysentiment
+                WHERE "storyID_id" in {} AND is_headline = true
+                GROUP BY "storyID_id"
                 """
     else:
         query = """
-                select "storyID_id", (array_agg(sentiment))[1] as body_sentiment
-                from apis_storysentiment WHERE "storyID_id" in {}
-                AND is_headline = false GROUP BY "storyID_id"
+                select "storyID_id", (array_agg(sentiment))[1]
+                as body_sentiment from apis_storysentiment
+                WHERE "storyID_id" in {} AND is_headline = false
+                GROUP BY "storyID_id"
                 """
 
-    return add_to_dataframe(articles, query)
+    return add_to_dataframe(articles, query, name="sentiment")
 
 
 def join_cluster(articles):
@@ -58,7 +61,7 @@ def join_cluster(articles):
             GROUP BY "storyID_id"
             """
 
-    return add_to_dataframe(articles, query)
+    return add_to_dataframe(articles, query, name="cluster")
 
 
 def join_entities(articles):
@@ -87,7 +90,7 @@ def join_entities(articles):
     articles["uuid"] = articles["uuid"].astype(str)
 
     entities_column = []
-    for i, row in articles.iterrows():
+    for _, row in articles.iterrows():
         if row['uuid'] in story_map:
             entities_column.append(story_map[row['uuid']])
         else:
@@ -110,24 +113,76 @@ def join_hotness(articles, bucket=False, sentiment=True, mode="portfolio"):
     return articles
 
 
+def join_bucket_scores(articles, scenario):
+    """
+    Fetch the bucket scores from the latest model
+    and add it to the story
+    """
+
+    query = """
+            select uuid from apis_modeldetail am2 where "version" =
+            (select max(version) from apis_modeldetail am
+            where "scenarioID_id" = '{}')
+            and "scenarioID_id" = '{}'
+            """
+
+    model_id = pd.read_sql(query.format(scenario, scenario), connection)
+
+    query = """
+            SELECT "storyID_id", "bucketID_id", "grossScore"
+            FROM apis_bucketscore scores
+            INNER JOIN
+            apis_bucket bucket
+            ON scores."bucketID_id" = bucket.uuid
+            WHERE "modelID_id" = '{}'
+            AND "storyID_id" IN {}
+            """
+
+    ids_str = "', '".join(articles["uuid"].apply(str).values)
+    ids_str = "('{}')".format(ids_str)
+
+    scores = pd.read_sql(query.format(
+        str(model_id.iloc[0]["uuid"]), ids_str), connection)
+
+    scores.drop_duplicates(['storyID_id', 'bucketID_id'],
+                           keep='last', inplace=True)
+
+    logging.info("fetched {} {}".format(scores.shape[0], "score"))
+
+    bucket_scores = format_bucket_scores(scores)
+
+    buckets_column = []
+    for _, row in articles.iterrows():
+        if row['uuid'] in bucket_scores:
+            buckets_column.append(bucket_scores[row['uuid']])
+        else:
+            buckets_column.append([])
+
+    articles["buckets"] = buckets_column
+
+    return articles
+
+
 def generate_feed():
     """
     Take new stories and generate the feed out of it.
     """
 
+    SCENARIO = 'a8563fe4-f348-4a53-9c1c-07f47a5f7660'
+
+    # filter by published date descending
     query = """
             SELECT uuid, title, unique_hash, url, search_keyword,
             published_date, "domain", "language", source_country,
             "entityID_id", "scenarioID_id"
             FROM public.apis_story WHERE uuid NOT IN
             (SELECT story_id FROM feed_storywarehouse)
+            AND "scenarioID_id" = '{}'
             LIMIT 10
-            """
+            """.format(SCENARIO)
+
     articles = pd.read_sql(query, connection)
     logging.info("articles: {}".format(articles.shape[0]))
-
-    articles['uuid'] = articles['uuid'].apply(str)
-    articles['entityID_id'] = articles['entityID_id'].apply(str)
 
     articles = join_body(articles)
     articles = join_sentiment(articles, title=True)
@@ -135,6 +190,9 @@ def generate_feed():
     articles = join_cluster(articles)
     articles = join_entities(articles)
     articles = join_hotness(articles)
+    articles = join_bucket_scores(articles, SCENARIO)
+
+    print(articles.columns)
 
 
 generate_feed()

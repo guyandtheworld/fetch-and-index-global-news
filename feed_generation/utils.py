@@ -32,7 +32,7 @@ def similarity(str1, str2):
         return 0
 
 
-def add_to_dataframe(articles, query):
+def add_to_dataframe(articles, query, name=None):
     """
     Fetch entities of an article and insert that into
     the Dataframe.
@@ -41,13 +41,12 @@ def add_to_dataframe(articles, query):
     ids_str = "('{}')".format(ids_str)
 
     df = pd.read_sql(query.format(ids_str), connection)
-    logging.info("fetching stuff: {}".format(df.shape[0]))
 
     articles = articles.merge(df, how='left',
                               left_on="uuid", right_on="storyID_id")
 
     articles = articles.dropna()
-    logging.info("articles: {}".format(articles.shape[0]))
+    logging.info("fetched {} {}".format(articles.shape[0], name))
     articles.drop('storyID_id', axis=1, inplace=True)
     return articles
 
@@ -128,3 +127,20 @@ def hotness(article, bucket, sentiment, mode):
               "general_decayed_hotness": round(decayedBaseScore, 3)}
 
     return scores
+
+
+def format_bucket_scores(scores):
+    """
+    Convert scores into bucket scores and add it to articles
+    """
+
+    story_map = {}
+
+    scores["score_map"] = scores.apply(
+        lambda x: {str(x["bucketID_id"]): x["grossScore"]}, axis=1)
+
+    for i in scores['storyID_id'].unique():
+        temp = scores[scores['storyID_id'] == i]
+        story_map[str(i)] = temp["score_map"].tolist()
+
+    return story_map
