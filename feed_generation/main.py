@@ -1,9 +1,11 @@
 import logging
 import pandas as pd
+from itertools import chain
 
 from utils import (add_to_dataframe,
                    connection,
                    format_bucket_scores,
+                   format_source_scores,
                    generate_story_entities,
                    hotness)
 
@@ -100,19 +102,6 @@ def join_entities(articles):
     return articles
 
 
-def join_hotness(articles, bucket=False, sentiment=True, mode="portfolio"):
-    """
-    Generate different types of score for articles
-    """
-
-    articles["published_date"] = articles["published_date"].dt.tz_localize(
-        None)
-    articles["hotness"] = articles.apply(lambda x: hotness(
-        x, bucket, sentiment, mode), axis=1)
-
-    return articles
-
-
 def join_bucket_scores(articles, scenario):
     """
     Fetch the bucket scores from the latest model
@@ -129,10 +118,12 @@ def join_bucket_scores(articles, scenario):
     model_id = pd.read_sql(query.format(scenario, scenario), connection)
 
     query = """
-            SELECT "storyID_id", "bucketID_id", "grossScore"
-            FROM apis_bucketscore scores
-            INNER JOIN
-            apis_bucket bucket
+            SELECT "storyID_id", "bucketID_id", "grossScore",
+            src.score as "sourceScore"
+            FROM apis_bucketscore scores INNER JOIN
+            (SELECT * FROM apis_source) src
+            ON src.uuid = scores."sourceID_id"
+            INNER JOIN apis_bucket bucket
             ON scores."bucketID_id" = bucket.uuid
             WHERE "modelID_id" = '{}'
             AND "storyID_id" IN {}
@@ -150,7 +141,9 @@ def join_bucket_scores(articles, scenario):
     logging.info("fetched {} {}".format(scores.shape[0], "score"))
 
     bucket_scores = format_bucket_scores(scores)
+    source_scores = format_source_scores(scores)
 
+    # adding the bucket scores to the dataframe
     buckets_column = []
     for _, row in articles.iterrows():
         if row['uuid'] in bucket_scores:
@@ -160,7 +153,51 @@ def join_bucket_scores(articles, scenario):
 
     articles["buckets"] = buckets_column
 
+    # add source scores to the dataframe
+    articles["scores"] = articles["uuid"].apply(
+        lambda x: {"source_scores": source_scores[str(x)]})
+
     return articles
+
+
+def generate_hotness(articles):
+    """
+    Generate different types of score for articles
+    """
+
+    articles["published_date"] = articles["published_date"].dt.tz_localize(
+        None)
+
+    # generate general hotness
+    articles["hotness"] = articles.apply(lambda x: hotness(
+        x, bucket=False, mode="portfolio",
+        score_type="general"), axis=1)
+
+    # generate bucket hotness
+    pass
+
+    return articles
+
+
+def insertion_cleaning(articles):
+    """
+    Clean the dataframe to have proper format while
+    Insertion
+    """
+    pass
+
+
+def insert_values():
+    query = """
+            INSERT INTO public.feed_storywarehouse
+            (uuid, story_id, story_title, story_url, published_date,
+            "domain", "language", source_country, entity_name,
+            entity_id, scenario_id, story_body, "timestamp",
+            scores, entities, hotness, bucket_score,
+            sentiment, "cluster")
+            VALUES(?, ?, '', '', '', '', '', '', '', ?,
+            ?, '', '', '', '', '', '', '', 0);
+            """
 
 
 def generate_feed():
@@ -172,7 +209,7 @@ def generate_feed():
 
     # filter by published date descending
     query = """
-            SELECT uuid, title, unique_hash, url, search_keyword,
+            SELECT uuid, title, url, search_keyword,
             published_date, "domain", "language", source_country,
             "entityID_id", "scenarioID_id"
             FROM public.apis_story WHERE uuid NOT IN
@@ -184,15 +221,16 @@ def generate_feed():
     articles = pd.read_sql(query, connection)
     logging.info("articles: {}".format(articles.shape[0]))
 
+    if len(articles) == 0:
+        return
+
     articles = join_body(articles)
     articles = join_sentiment(articles, title=True)
     articles = join_sentiment(articles, title=False)
     articles = join_cluster(articles)
     articles = join_entities(articles)
-    articles = join_hotness(articles)
     articles = join_bucket_scores(articles, SCENARIO)
-
-    print(articles.columns)
+    articles = generate_hotness(articles)
 
 
 generate_feed()

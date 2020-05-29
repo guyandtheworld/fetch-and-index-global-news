@@ -84,7 +84,7 @@ def presence_score(keyword, text, analytics_type):
         return score
 
 
-def hotness(article, bucket, sentiment, mode):
+def hotness(article, bucket, mode, score_type):
     """
     Adding to score if the company term is in title
     * domain score - domain reliability
@@ -96,9 +96,8 @@ def hotness(article, bucket, sentiment, mode):
     else:
         keyword = article["name"]
 
-    if sentiment:
-        # negative news
-        s = -s * 50
+    # negative news
+    s = -s * 50
 
     # presence of keyword in title
     s += presence_score(keyword.lower(),
@@ -113,7 +112,6 @@ def hotness(article, bucket, sentiment, mode):
     if bucket:
         # bucket score + source score
         s += (article["grossScore"] * 100)
-        s += (article["sourceScore"] * 100)
 
     baseScore = math.log(max(s, 1))
 
@@ -123,8 +121,8 @@ def hotness(article, bucket, sentiment, mode):
         x = timeDiff - 1
         decayedBaseScore = baseScore * math.exp(-.01 * x * x)
 
-    scores = {"general_hotness": round(baseScore, 3),
-              "general_decayed_hotness": round(decayedBaseScore, 3)}
+    scores = {"{}": round(baseScore, 3),
+              "{}_decayed": round(decayedBaseScore, 3)}
 
     return scores
 
@@ -137,10 +135,24 @@ def format_bucket_scores(scores):
     story_map = {}
 
     scores["score_map"] = scores.apply(
-        lambda x: {str(x["bucketID_id"]): x["grossScore"]}, axis=1)
+        lambda x: {str(x["bucketID_id"]): round(x["grossScore"], 3)}, axis=1)
 
     for i in scores['storyID_id'].unique():
         temp = scores[scores['storyID_id'] == i]
         story_map[str(i)] = temp["score_map"].tolist()
+
+    return story_map
+
+
+def format_source_scores(scores):
+    """
+    Convert source scores and add it to articles
+    """
+
+    story_map = {}
+
+    for i in scores['storyID_id'].unique():
+        temp = scores[scores['storyID_id'] == i]
+        story_map[str(i)] = temp["sourceScore"].iloc[0]
 
     return story_map
