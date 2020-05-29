@@ -84,7 +84,7 @@ def presence_score(keyword, text, analytics_type):
         return score
 
 
-def hotness(article, bucket, mode, score_type):
+def hotness(article, mode):
     """
     Adding to score if the company term is in title
     * domain score - domain reliability
@@ -109,10 +109,6 @@ def hotness(article, bucket, mode, score_type):
                         article["body"].lower(),
                         "body")
 
-    if bucket:
-        # bucket score + source score
-        s += (article["grossScore"] * 100)
-
     baseScore = math.log(max(s, 1))
 
     timeDiff = (datetime.now() - article["published_date"]).days
@@ -121,8 +117,25 @@ def hotness(article, bucket, mode, score_type):
         x = timeDiff - 1
         decayedBaseScore = baseScore * math.exp(-.01 * x * x)
 
-    scores = {"{}".format(score_type): round(baseScore, 3),
-              "{}_decayed".format(score_type): round(decayedBaseScore, 3)}
+    scores = {"general": round(baseScore, 3),
+              "general_decayed": round(decayedBaseScore, 3)}
+
+    # generate baseScore and decayedBaseScore for buckets
+    for bucket in article["buckets"]:
+        bucket_id = list(bucket.keys())[0]
+
+        # bucket score
+        s += (bucket[bucket_id] * 100)
+
+        baseScore = math.log(max(s, 1))
+
+        timeDiff = (datetime.now() - article["published_date"]).days
+
+        if (timeDiff >= 1):
+            x = timeDiff - 1
+            decayedBaseScore = baseScore * math.exp(-.01 * x * x)
+        scores["{}".format(bucket_id)] = round(baseScore, 3)
+        scores["{}_decayed".format(bucket_id)] = round(decayedBaseScore, 3)
 
     return scores
 

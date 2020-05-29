@@ -17,6 +17,6 @@
     scores = JSONField()  # gross score, source score
     entities = JSONField()
     hotness = JSONField()
-    bucket_score = JSONField()
+    bucket_scores = JSONField()
     sentiment = JSONField()
 ```

@@ -170,11 +170,7 @@ def generate_hotness(articles):
 
     # generate general hotness
     articles["hotness"] = articles.apply(lambda x: hotness(
-        x, bucket=False, mode="portfolio",
-        score_type="general"), axis=1)
-
-    # generate bucket hotness
-    pass
+        x, mode="portfolio"), axis=1)
 
     return articles
 
