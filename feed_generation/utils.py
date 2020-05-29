@@ -121,8 +121,8 @@ def hotness(article, bucket, mode, score_type):
         x = timeDiff - 1
         decayedBaseScore = baseScore * math.exp(-.01 * x * x)
 
-    scores = {"{}": round(baseScore, 3),
-              "{}_decayed": round(decayedBaseScore, 3)}
+    scores = {"{}".format(score_type): round(baseScore, 3),
+              "{}_decayed".format(score_type): round(decayedBaseScore, 3)}
 
     return scores
 

@@ -184,7 +184,21 @@ def insertion_cleaning(articles):
     Clean the dataframe to have proper format while
     Insertion
     """
-    pass
+    # merge sentiment
+
+    def merge_sentiment(row):
+
+        merged = {value: round((row["title_sentiment"][value] +
+                                row["body_sentiment"][value])/2, 3)
+                  for value in types}
+        return merged
+
+    types = ["neg", "neu", "pos", "compound"]
+    articles["sentiment"] = articles[["title_sentiment",
+                                      "body_sentiment"]].apply(merge_sentiment,
+                                                               axis=1)
+    articles.drop(["title_sentiment", "body_sentiment"], axis=1, inplace=True)
+    return articles
 
 
 def insert_values():
@@ -203,11 +217,13 @@ def insert_values():
 def generate_feed():
     """
     Take new stories and generate the feed out of it.
+    * Only run decay if days < 30
     """
 
     SCENARIO = 'a8563fe4-f348-4a53-9c1c-07f47a5f7660'
 
     # filter by published date descending
+    # if new model, clean the existing table
     query = """
             SELECT uuid, title, url, search_keyword,
             published_date, "domain", "language", source_country,
@@ -231,6 +247,8 @@ def generate_feed():
     articles = join_entities(articles)
     articles = join_bucket_scores(articles, SCENARIO)
     articles = generate_hotness(articles)
+
+    articles = insertion_cleaning(articles)
 
 
 generate_feed()
