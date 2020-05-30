@@ -1,13 +1,16 @@
 import logging
 import pandas as pd
-from itertools import chain
+import uuid
 
+from itertools import chain
+from datetime import datetime
 from utils import (add_to_dataframe,
                    connection,
                    format_bucket_scores,
                    format_source_scores,
                    generate_story_entities,
-                   hotness)
+                   hotness,
+                   insert_values)
 
 
 logging.basicConfig(level=logging.INFO)
@@ -99,6 +102,23 @@ def join_entities(articles):
             entities_column.append([])
 
     articles["entities"] = entities_column
+
+    def format_entities(values):
+        """
+        Format entities in a way that's easy to render in the
+        frontend.
+        """
+        final = {}
+
+        for value in values:
+            if value["type"] in final:
+                final[value["type"]][value["name"]] = value["uuid"]
+            else:
+                final[value["type"]] = {value["name"]: value["uuid"]}
+        return final
+
+    articles["entities"] = articles["entities"].apply(format_entities)
+
     return articles
 
 
@@ -194,20 +214,23 @@ def insertion_cleaning(articles):
                                       "body_sentiment"]].apply(merge_sentiment,
                                                                axis=1)
     articles.drop(["title_sentiment", "body_sentiment"], axis=1, inplace=True)
+
+    articles = articles.dropna()
+
+    # rename columns
+    articles.rename(columns={'uuid': 'storyID'}, inplace=True)
+    articles["timestamp"] = datetime.now()
+    articles['uuid'] = [uuid.uuid4() for _ in range(len(articles.index))]
+
+    # reorder articles
+    articles = articles[['uuid', 'storyID', 'title', 'url', 'published_date',
+                         'domain', 'language', 'source_country',
+                         'search_keyword', 'entity_name', 'entityID_id',
+                         'scenarioID_id', 'body', 'timestamp', 'cluster',
+                         'scores', 'entities', 'hotness', 'buckets',
+                         'sentiment']]
+
     return articles
-
-
-def insert_values():
-    query = """
-            INSERT INTO public.feed_storywarehouse
-            (uuid, story_id, story_title, story_url, published_date,
-            "domain", "language", source_country, entity_name,
-            entity_id, scenario_id, story_body, "timestamp",
-            scores, entities, hotness, bucket_score,
-            sentiment, "cluster")
-            VALUES(?, ?, '', '', '', '', '', '', '', ?,
-            ?, '', '', '', '', '', '', '', 0);
-            """
 
 
 def generate_feed():
@@ -221,12 +244,15 @@ def generate_feed():
     # filter by published date descending
     # if new model, clean the existing table
     query = """
-            SELECT uuid, title, url, search_keyword,
+            SELECT story.uuid, title, url, search_keyword,
             published_date, "domain", "language", source_country,
-            "entityID_id", "scenarioID_id"
-            FROM public.apis_story WHERE uuid NOT IN
-            (SELECT story_id FROM feed_storywarehouse)
-            AND "scenarioID_id" = '{}'
+            entity.name as "entity_name", "entityID_id",
+            story."scenarioID_id" FROM public.apis_story story
+            INNER JOIN public.apis_entity entity
+            ON story."entityID_id" = entity.uuid
+            WHERE story.uuid NOT IN
+            (SELECT "storyID" FROM feed_portfoliowarehouse)
+            AND story."scenarioID_id" = '{}'
             LIMIT 10
             """.format(SCENARIO)
 
@@ -242,9 +268,22 @@ def generate_feed():
     articles = join_cluster(articles)
     articles = join_entities(articles)
     articles = join_bucket_scores(articles, SCENARIO)
-    articles = generate_hotness(articles)
 
+    articles = generate_hotness(articles)
     articles = insertion_cleaning(articles)
+
+    query = """
+            INSERT INTO public.feed_autowarehouse
+            (uuid, "storyID", title, url, published_date, "domain",
+            "language", source_country, search_keyword, entity_name,
+            "entityID", "scenarioID", story_body, "timestamp", "cluster",
+            scores, entities, hotness, bucket_scores, sentiment)
+            VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+            %s, %s, %s, %s, %s, %s, %s, %s);
+            """
+
+    values = [tuple(row) for row in articles.itertuples(index=False)]
+    insert_values(query, values)
 
 
 generate_feed()

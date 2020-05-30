@@ -1,28 +1,30 @@
+import json
 import logging
 import math
 import os
 import pandas as pd
+import time
 
+from google.cloud import pubsub_v1
 from datetime import datetime
 from sqlalchemy import create_engine
 
 logging.basicConfig(level=logging.INFO)
 
-
-params = {
-    'database': os.environ["DB_NAME"],
-    'user': os.environ["DB_USER"],
-    'password': os.environ["DB_PASSWORD"],
-    'host': os.environ["DB_HOST"],
-    'port': os.environ["DB_PORT"],
-}
-
-
-conn_str = f'postgresql://{params["user"]}:{params["password"]}@{params["host"]}:{params["port"]}/{params["database"]}'
-connection = create_engine(conn_str)
-
-
+RESULT = False
+PROJECT_ID = os.getenv("PROJECT_ID", "alrt-ai")
+TOPIC_ID = os.getenv("PUBLISHER_NAME", "insertion_test")
 KEYWORD_SCORE = 20
+
+DB_NAME = os.environ["DB_NAME"],
+DB_USER = os.environ["DB_USER"],
+DB_PASSWORD = os.environ["DB_PASSWORD"],
+DB_HOST = os.environ["DB_HOST"],
+DB_PORT = os.environ["DB_PORT"],
+
+
+connstr = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
+connection = create_engine(connstr)
 
 
 def similarity(str1, str2):
@@ -169,3 +171,64 @@ def format_source_scores(scores):
         story_map[str(i)] = temp["sourceScore"].iloc[0]
 
     return story_map
+
+
+def get_callback(api_future, data, ref):
+    """
+    Wrap message data in the context of the callback function.
+    """
+
+    def callback(api_future):
+        global RESULT
+
+        try:
+            logging.info(
+                "Published message now has message ID {}".format(
+                    api_future.result()
+                )
+            )
+            ref["num_messages"] += 1
+            RESULT = True
+        except Exception:
+            RESULT = False
+
+            logging.info(
+                "A problem occurred when publishing {}: {}\n".format(
+                    data, api_future.exception()
+                )
+            )
+            raise
+
+    return callback
+
+
+def insert_values(query, values):
+    """
+    Use pub-sub to insert the values into CloudSQL database
+    """
+    payload = {}
+    payload["query"] = query
+    payload["source"] = "feed_generation"
+
+    client = pubsub_v1.PublisherClient()
+    topic_path = client.topic_path(PROJECT_ID, TOPIC_ID)
+
+    ref = dict({"num_messages": 0})
+
+    # deliver only maximum of 1000 stories at once
+    for i in range(0, len(values), 1000):
+        sliced_values = values[i:i+1000]
+
+        payload["data"] = sliced_values
+
+        data = str(json.dumps(payload)).encode('utf-8')
+
+        api_future = client.publish(topic_path, data=data)
+        api_future.add_done_callback(get_callback(api_future, data, ref))
+
+        while api_future.running():
+            time.sleep(0.5)
+            logging.info("Published {} message(s).".format(
+                ref["num_messages"]))
+
+    return RESULT
