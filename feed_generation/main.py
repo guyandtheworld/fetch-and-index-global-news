@@ -1,8 +1,8 @@
+import json
 import logging
 import pandas as pd
 import uuid
 
-from itertools import chain
 from datetime import datetime
 from utils import (add_to_dataframe,
                    connection,
@@ -173,6 +173,8 @@ def join_bucket_scores(articles, scenario):
 
     articles["buckets"] = buckets_column
 
+    logging.info("Joining scores")
+
     # add source scores to the dataframe
     articles["scores"] = articles["uuid"].apply(
         lambda x: {"source_scores": source_scores[str(x)]})
@@ -188,6 +190,8 @@ def generate_hotness(articles):
     articles["published_date"] = articles["published_date"].dt.tz_localize(
         None)
 
+    logging.info("Generating hotness")
+
     # generate general hotness
     articles["hotness"] = articles.apply(lambda x: hotness(
         x, mode="portfolio"), axis=1)
@@ -200,8 +204,10 @@ def insertion_cleaning(articles):
     Clean the dataframe to have proper format while
     Insertion
     """
-    # merge sentiment
 
+    logging.info("Cleaning the feed data")
+
+    # merge sentiment
     def merge_sentiment(row):
 
         merged = {value: round((row["title_sentiment"][value] +
@@ -219,8 +225,21 @@ def insertion_cleaning(articles):
 
     # rename columns
     articles.rename(columns={'uuid': 'storyID'}, inplace=True)
-    articles["timestamp"] = datetime.now()
-    articles['uuid'] = [uuid.uuid4() for _ in range(len(articles.index))]
+    articles["timestamp"] = str(datetime.now())
+    articles["published_date"] = articles["published_date"].apply(str)
+    articles["storyID"] = articles["storyID"].apply(str)
+    articles["entityID_id"] = articles["entityID_id"].apply(str)
+    articles["scenarioID_id"] = articles["scenarioID_id"].apply(str)
+
+    def jsonify(x): return json.dumps(x)
+
+    articles["scores"] = articles["scores"].apply(jsonify)
+    articles["entities"] = articles["entities"].apply(jsonify)
+    articles["hotness"] = articles["hotness"].apply(jsonify)
+    articles["buckets"] = articles["buckets"].apply(jsonify)
+    articles["sentiment"] = articles["sentiment"].apply(jsonify)
+
+    articles['uuid'] = [str(uuid.uuid4()) for _ in range(len(articles.index))]
 
     # reorder articles
     articles = articles[['uuid', 'storyID', 'title', 'url', 'published_date',
@@ -281,6 +300,8 @@ def generate_feed():
             VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
             %s, %s, %s, %s, %s, %s, %s, %s);
             """
+
+    logging.info("Inserting {} data".format(articles.shape[0]))
 
     values = [tuple(row) for row in articles.itertuples(index=False)]
     insert_values(query, values)
