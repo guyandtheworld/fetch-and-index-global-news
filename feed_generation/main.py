@@ -1,3 +1,4 @@
+import base64
 import json
 import logging
 import pandas as pd
@@ -283,7 +284,7 @@ def generate_feed(scenario, mode):
                 (SELECT "storyID" FROM feed_autowarehouse)
                 AND story."scenarioID_id" = '{}'
                 ORDER BY story.published_date DESC
-                LIMIT 10
+                LIMIT 1000
                 """.format(scenario)
     elif mode == "portfolio":
         query = """
@@ -297,7 +298,7 @@ def generate_feed(scenario, mode):
                 (SELECT "storyID" FROM feed_portfoliowarehouse)
                 AND story."scenarioID_id" = '{}'
                 ORDER BY story.published_date DESC
-                LIMIT 10
+                LIMIT 1000
                 """.format(scenario)
     else:
         return None
@@ -387,4 +388,24 @@ def test_feed():
     generate_feed(oil, mode="auto")
 
 
-test_feed()
+def feed(event, context):
+
+    logging.info("""This Function was triggered by messageId {} published at {}
+
+    """.format(context.event_id, context.timestamp))
+
+    # data could be wrong format
+    if 'data' in event:
+        str_params = base64.b64decode(event['data']).decode('utf-8')
+        data = json.loads(str_params)
+    else:
+        logging.info("no text in the message")
+        return
+
+    logging.info("Generating feed for {} Scenario".format(
+        data["scenario"]))
+
+    if data:
+        generate_feed(data["scenario"], data["mode"])
+    else:
+        logging.info("message format broken")
