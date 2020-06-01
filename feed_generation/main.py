@@ -382,10 +382,10 @@ def test_feed():
     * Historic
     """
 
-    risk = 'a8563fe4-f348-4a53-9c1c-07f47a5f7660'
-    oil = 'd3ef747b-1c3e-4582-aecb-eacee1cababe'
+    scenario = ""
+    mode = ""
 
-    generate_feed(oil, mode="auto")
+    generate_feed(scenario, mode)
 
 
 def feed(event, context):
