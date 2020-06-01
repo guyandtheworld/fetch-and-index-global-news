@@ -382,8 +382,8 @@ def test_feed():
     * Historic
     """
 
-    scenario = ""
-    mode = ""
+    scenario = 'a8563fe4-f348-4a53-9c1c-07f47a5f7660'
+    mode = 'portfolio'
 
     generate_feed(scenario, mode)
 
@@ -409,3 +409,6 @@ def feed(event, context):
         generate_feed(data["scenario"], data["mode"])
     else:
         logging.info("message format broken")
+
+
+test_feed()

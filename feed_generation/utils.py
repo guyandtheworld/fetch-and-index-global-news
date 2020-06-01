@@ -119,6 +119,8 @@ def hotness(article, mode):
     if (timeDiff >= 1):
         x = timeDiff - 1
         decayedBaseScore = baseScore * math.exp(-.01 * x * x)
+    else:
+        decayedBaseScore = baseScore
 
     scores = {"general": round(baseScore, 3),
               "general_decayed": round(decayedBaseScore, 3)}
@@ -137,6 +139,9 @@ def hotness(article, mode):
         if (timeDiff >= 1):
             x = timeDiff - 1
             decayedBaseScore = baseScore * math.exp(-.01 * x * x)
+        else:
+            decayedBaseScore = baseScore
+
         scores["{}".format(bucket_id)] = round(baseScore, 3)
         scores["{}_decayed".format(bucket_id)] = round(decayedBaseScore, 3)
 
