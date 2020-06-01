@@ -119,6 +119,10 @@ def join_entities(articles):
 
     articles["entities"] = articles["entities"].apply(format_entities)
 
+    drop_rows = articles[articles["entities"].map(len) == 0].index
+    logging.info("Dropping {} rows based on entities".format(len(drop_rows)))
+    articles = articles.drop(drop_rows)
+
     return articles
 
 
@@ -173,6 +177,10 @@ def join_bucket_scores(articles, scenario):
 
     articles["buckets"] = buckets_column
 
+    drop_rows = articles[articles["buckets"].map(len) == 0].index
+    logging.info("Dropping {} rows based on score".format(len(drop_rows)))
+    articles = articles.drop(drop_rows)
+
     logging.info("Joining scores")
 
     # add source scores to the dataframe
@@ -182,7 +190,7 @@ def join_bucket_scores(articles, scenario):
     return articles
 
 
-def generate_hotness(articles):
+def generate_hotness(articles, mode):
     """
     Generate different types of score for articles
     """
@@ -194,7 +202,7 @@ def generate_hotness(articles):
 
     # generate general hotness
     articles["hotness"] = articles.apply(lambda x: hotness(
-        x, mode="portfolio"), axis=1)
+        x, mode), axis=1)
 
     return articles
 
@@ -252,28 +260,47 @@ def insertion_cleaning(articles):
     return articles
 
 
-def generate_feed():
+def generate_feed(scenario, mode):
     """
     Take new stories and generate the feed out of it.
     * Only run decay if days < 30
     """
 
-    SCENARIO = 'a8563fe4-f348-4a53-9c1c-07f47a5f7660'
-
     # filter by published date descending
     # if new model, clean the existing table
-    query = """
-            SELECT story.uuid, title, url, search_keyword,
-            published_date, "domain", "language", source_country,
-            entity.name as "entity_name", "entityID_id",
-            story."scenarioID_id" FROM public.apis_story story
-            INNER JOIN public.apis_entity entity
-            ON story."entityID_id" = entity.uuid
-            WHERE story.uuid NOT IN
-            (SELECT "storyID" FROM feed_portfoliowarehouse)
-            AND story."scenarioID_id" = '{}'
-            LIMIT 10
-            """.format(SCENARIO)
+    if mode == "auto":
+        query = """
+                SELECT story.uuid, title, url, search_keyword,
+                published_date, "domain", "language", source_country,
+                entityref.name as "entity_name", storymap."entityID_id",
+                story."scenarioID_id" FROM
+                apis_storyentitymap storymap
+                INNER JOIN apis_story story
+                on storymap."storyID_id" = story.uuid
+                INNER JOIN apis_storyentityref entityref
+                ON story."entityID_id" = entityref.uuid
+                WHERE story.uuid NOT IN
+                (SELECT "storyID" FROM feed_autowarehouse)
+                AND story."scenarioID_id" = '{}'
+                ORDER BY story.published_date DESC
+                LIMIT 10
+                """.format(scenario)
+    elif mode == "portfolio":
+        query = """
+                SELECT story.uuid, title, url, search_keyword,
+                published_date, "domain", "language", source_country,
+                entity.name as "entity_name", "entityID_id",
+                story."scenarioID_id" FROM public.apis_story story
+                INNER JOIN public.apis_entity entity
+                ON story."entityID_id" = entity.uuid
+                WHERE story.uuid NOT IN
+                (SELECT "storyID" FROM feed_portfoliowarehouse)
+                AND story."scenarioID_id" = '{}'
+                ORDER BY story.published_date DESC
+                LIMIT 10
+                """.format(scenario)
+    else:
+        return None
 
     articles = pd.read_sql(query, connection)
     logging.info("articles: {}".format(articles.shape[0]))
@@ -282,24 +309,60 @@ def generate_feed():
         return
 
     articles = join_body(articles)
-    articles = join_sentiment(articles, title=True)
-    articles = join_sentiment(articles, title=False)
-    articles = join_cluster(articles)
-    articles = join_entities(articles)
-    articles = join_bucket_scores(articles, SCENARIO)
 
-    articles = generate_hotness(articles)
+    if len(articles) == 0:
+        return False
+
+    articles = join_sentiment(articles, title=True)
+
+    if len(articles) == 0:
+        return False
+
+    articles = join_sentiment(articles, title=False)
+
+    if len(articles) == 0:
+        return False
+
+    articles = join_cluster(articles)
+
+    if len(articles) == 0:
+        return False
+
+    articles = join_entities(articles)
+
+    if len(articles) == 0:
+        return False
+
+    articles = join_bucket_scores(articles, scenario)
+
+    if len(articles) == 0:
+        return False
+
+    articles = generate_hotness(articles, mode)
     articles = insertion_cleaning(articles)
 
-    query = """
-            INSERT INTO public.feed_autowarehouse
-            (uuid, "storyID", title, url, published_date, "domain",
-            "language", source_country, search_keyword, entity_name,
-            "entityID", "scenarioID", story_body, "timestamp", "cluster",
-            scores, entities, hotness, bucket_scores, sentiment)
-            VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-            %s, %s, %s, %s, %s, %s, %s, %s);
-            """
+    if mode == "auto":
+        query = """
+                INSERT INTO public.feed_autowarehouse
+                (uuid, "storyID", title, url, published_date, "domain",
+                "language", source_country, search_keyword, entity_name,
+                "entityID", "scenarioID", story_body, "timestamp", "cluster",
+                scores, entities, hotness, bucket_scores, sentiment)
+                VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s, %s, %s, %s);
+                """
+    elif mode == "portfolio":
+        query = """
+                INSERT INTO public.feed_portfoliowarehouse
+                (uuid, "storyID", title, url, published_date, "domain",
+                "language", source_country, search_keyword, entity_name,
+                "entityID", "scenarioID", story_body, "timestamp", "cluster",
+                scores, entities, hotness, bucket_scores, sentiment)
+                VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s, %s, %s, %s);
+                """
+    else:
+        return None
 
     logging.info("Inserting {} data".format(articles.shape[0]))
 
@@ -307,4 +370,21 @@ def generate_feed():
     insert_values(query, values)
 
 
-generate_feed()
+def test_feed():
+    """
+    Mode:
+    * Auto
+    * Portfolio
+
+    Type:
+    * Hot news
+    * Historic
+    """
+
+    risk = 'a8563fe4-f348-4a53-9c1c-07f47a5f7660'
+    oil = 'd3ef747b-1c3e-4582-aecb-eacee1cababe'
+
+    generate_feed(oil, mode="auto")
+
+
+test_feed()

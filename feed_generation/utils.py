@@ -97,7 +97,7 @@ def hotness(article, mode):
     if mode == "portfolio":
         keyword = article["search_keyword"]
     else:
-        keyword = article["name"]
+        keyword = article["entity_name"]
 
     # negative news
     s = -s * 50
