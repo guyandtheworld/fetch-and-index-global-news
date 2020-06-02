@@ -10,3 +10,4 @@ scipy
 sklearn
 webencodings
 wcwidth
+google-cloud-pubsub

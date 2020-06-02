@@ -3,13 +3,16 @@ import logging
 import os
 import re
 import requests
+import json
 import time
-import psycopg2
 import pandas as pd
 import sys
+import psycopg2
 import urllib3
 import uuid
 import warnings
+
+from google.cloud import pubsub_v1
 
 sys.path.insert(1, os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -26,6 +29,10 @@ logging.basicConfig(level=logging.INFO)
 CONNECTIONS = 100
 TIMEOUT = 5
 
+PROJECT_ID = os.getenv("PROJECT_ID", "alrt-ai")
+TOPIC_ID = os.getenv("PUBLISHER_NAME", "insertion_test")
+RESULT = False
+SOURCE = "body_extraction"
 
 logging.basicConfig(level=logging.INFO)
 
@@ -45,7 +52,6 @@ headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) \
 
 
 logging.basicConfig(level=logging.INFO)
-
 
 params = {
     'database': os.environ["DB_NAME"],
@@ -88,25 +94,67 @@ def connect(query='SELECT version()'):
     return results
 
 
-def insert_values(sql, insert_list):
+def get_callback(api_future, data, ref):
     """
-    insert multiple vendors into the vendors table
+    Wrap message data in the context of the callback function.
     """
-    conn = None
-    logging.info("inserting: {}".format(len(insert_list)))
-    try:
-        # connect to the PostgreSQL database
-        conn = psycopg2.connect(**params)
-        cur = conn.cursor()
-        cur.executemany(sql, insert_list)
-        conn.commit()
-        # close communication with the database
-        cur.close()
-    except (Exception, psycopg2.DatabaseError) as error:
-        logging.info(error)
-    finally:
-        if conn is not None:
-            conn.close()
+
+    def callback(api_future):
+        global RESULT
+
+        try:
+            logging.info(
+                "Published message now has message ID {}".format(
+                    api_future.result()
+                )
+            )
+            ref["num_messages"] += 1
+            RESULT = True
+        except Exception:
+            RESULT = False
+
+            logging.info(
+                "A problem occurred when publishing {}: {}\n".format(
+                    data, api_future.exception()
+                )
+            )
+            raise
+
+    return callback
+
+
+def publish_values(query, values):
+    """
+    insert multiple vendors into the story table
+    by sending it over to the insertion service
+    """
+
+    payload = {}
+    payload["query"] = query
+    payload["source"] = SOURCE
+
+    client = pubsub_v1.PublisherClient()
+    topic_path = client.topic_path(PROJECT_ID, TOPIC_ID)
+
+    ref = dict({"num_messages": 0})
+
+    # deliver only maximum of 1000 stories at once
+    for i in range(0, len(values), 800):
+        sliced_values = values[i:i+800]
+
+        payload["data"] = sliced_values
+
+        data = str(json.dumps(payload)).encode('utf-8')
+
+        api_future = client.publish(topic_path, data=data)
+        api_future.add_done_callback(get_callback(api_future, data, ref))
+
+        while api_future.running():
+            time.sleep(0.5)
+            logging.info("Published {} message(s).".format(
+                ref["num_messages"]))
+
+    return RESULT
 
 
 def do_request(url):
@@ -146,7 +194,7 @@ def body_cleaning(text):
 
 def gen_text_dragnet(article, timeout):
     content, status_code = do_request(article[1])
-    body = body_cleaning(content[:600])
+    body = body_cleaning(content[:8000])
     return (article[0], body, status_code)
 
 
@@ -197,7 +245,7 @@ def extract_body():
             VALUES(%s, %s, %s, %s, %s);
             """
 
-    insert_values(query, values)
+    publish_values(query, values)
 
     logging.info(f'Took {time2-time1:.2f} s')
     logging.info(pd.Series(out).value_counts())
