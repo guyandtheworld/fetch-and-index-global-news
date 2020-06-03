@@ -12,6 +12,10 @@ The parameter -t libs might help you. You can use it to install everything on a 
 
 I added the rm -rf libs/*.dist-info portion in order to not pollute the source folder with tons of library version and distribution information that are useless to the function. Those are used by pip when freezing and planning updates.
 
+`ls libs/`
+
+`Cython  dragnet  ftfy  html5lib  lxml  __pycache__  pyximport  sklearn  wcwidth  webencodings`
+
 ### See logs
 
 `gcloud functions logs read --limit 50`

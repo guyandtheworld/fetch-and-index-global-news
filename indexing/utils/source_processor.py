@@ -1,12 +1,22 @@
 import hashlib
 import uuid
+import logging
 
 from datetime import datetime
 from langdetect import detect
 
 
+logging.basicConfig(level=logging.INFO)
+
+
 def isEnglish(text):
-    lang = detect(text)
+    try:
+        lang = detect(text)
+    except Exception as e:
+        logging.info(e)
+        logging.info(text)
+        return False
+
     if lang == 'en':
         return True
     else:
