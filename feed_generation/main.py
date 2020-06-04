@@ -186,7 +186,9 @@ def join_bucket_scores(articles, scenario):
 
     # add source scores to the dataframe
     articles["scores"] = articles["uuid"].apply(
-        lambda x: {"source_scores": source_scores[str(x)]})
+        lambda x: {"source_scores": source_scores[str(x)],
+                   "model": str(model_id.iloc[0]["uuid"])
+                   })
 
     return articles
 
@@ -261,11 +263,76 @@ def insertion_cleaning(articles):
     return articles
 
 
+def new_model_exists(scenario, mode):
+    """
+    Check if a new model is deployed for a scenario
+    """
+
+    query = """
+            select uuid from apis_modeldetail am2 where "version" =
+            (select max(version) from apis_modeldetail am
+            where "scenarioID_id" = '{}')
+            and "scenarioID_id" = '{}'
+            """
+
+    model_id = pd.read_sql(query.format(scenario, scenario), connection)
+
+    latest_model = str(model_id.iloc[0]["uuid"])
+
+    if mode == "auto":
+        query = """
+                select scores->'model' from feed_autowarehouse
+                where "scenarioID" = '{}'
+                """
+    elif mode == "portfolio":
+        query = """
+                select scores->'model' from feed_portfoliowarehouse
+                where "scenarioID" = '{}'
+                """
+
+    model_id = pd.read_sql(query.format(scenario), connection)
+
+    if len(model_id) == 0:
+        return False
+
+    existing_model = str(model_id.iloc[0]["uuid"])
+
+    if latest_model != existing_model:
+        return True
+
+    return False
+
+
+def clear_feed(scenario, mode):
+    """
+    Clear scenario feed if model is new
+    """
+    if mode == "auto":
+        query = """
+                delete from feed_autowarehouse
+                where scenarioID = '{}'
+                """
+    elif mode == "portfolio":
+        query = """
+                delete from feed_autowarehouse
+                where scenarioID = '{}'
+                """
+
+    response = pd.read_sql(query.format(scenario), connection)
+    logging.info(response)
+
+
 def generate_feed(scenario, mode):
     """
     Take new stories and generate the feed out of it.
     * Only run decay if days < 30
     """
+
+    # if there is a new model, delete from feed
+    if new_model_exists(scenario, mode):
+        logging.info(
+            "New model exists, clearing feed for scenario {}".format(scenario))
+        clear_feed(scenario, mode)
 
     # filter by published date descending
     # if new model, clean the existing table

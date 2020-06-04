@@ -153,6 +153,9 @@ def format_bucket_scores(scores):
     Convert scores into bucket scores and add it to articles
     """
 
+    if scores.shape[0] == 0:
+        return {}
+
     story_map = {}
 
     scores["score_map"] = scores.apply(
@@ -169,6 +172,9 @@ def format_source_scores(scores):
     """
     Convert source scores and add it to articles
     """
+
+    if scores.shape[0] == 0:
+        return {}
 
     story_map = {}
 
