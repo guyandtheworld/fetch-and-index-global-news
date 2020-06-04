@@ -281,23 +281,30 @@ def new_model_exists(scenario, mode):
 
     if mode == "auto":
         query = """
-                select scores->'model' from feed_autowarehouse
+                select scores->'model' as uuid from feed_autowarehouse
                 where "scenarioID" = '{}'
                 """
     elif mode == "portfolio":
         query = """
-                select scores->'model' from feed_portfoliowarehouse
+                select scores->'model' as uuid from feed_portfoliowarehouse
                 where "scenarioID" = '{}'
                 """
 
     model_id = pd.read_sql(query.format(scenario), connection)
 
+    # if table is empty
     if len(model_id) == 0:
         return False
 
-    existing_model = str(model_id.iloc[0]["uuid"])
+    existing_model = model_id.iloc[0]["uuid"]
 
-    if latest_model != existing_model:
+    if existing_model is None:
+        return False
+
+    logging.info(
+        "comparing {} with {}".format(latest_model, existing_model))
+
+    if latest_model != str(existing_model):
         return True
 
     return False
@@ -310,12 +317,12 @@ def clear_feed(scenario, mode):
     if mode == "auto":
         query = """
                 delete from feed_autowarehouse
-                where scenarioID = '{}'
+                where "scenarioID" = '{}'
                 """
     elif mode == "portfolio":
         query = """
-                delete from feed_autowarehouse
-                where scenarioID = '{}'
+                delete from feed_portfoliowarehouse
+                where "scenarioID" = '{}'
                 """
 
     response = pd.read_sql(query.format(scenario), connection)
