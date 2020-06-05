@@ -7,6 +7,7 @@ import uuid
 from datetime import datetime
 from utils import (add_to_dataframe,
                    connection,
+                   delete_feed,
                    format_bucket_scores,
                    format_source_scores,
                    generate_story_entities,
@@ -325,8 +326,8 @@ def clear_feed(scenario, mode):
                 where "scenarioID" = '{}'
                 """
 
-    response = pd.read_sql(query.format(scenario), connection)
-    logging.info(response)
+    logging.info("Clearing Feed.")
+    delete_feed(query.format(scenario))
 
 
 def generate_feed(scenario, mode):
@@ -358,7 +359,7 @@ def generate_feed(scenario, mode):
                 (SELECT "storyID" FROM feed_autowarehouse)
                 AND story."scenarioID_id" = '{}'
                 ORDER BY story.published_date DESC
-                LIMIT 1000
+                LIMIT 5000
                 """.format(scenario)
     elif mode == "portfolio":
         query = """
@@ -372,7 +373,7 @@ def generate_feed(scenario, mode):
                 (SELECT "storyID" FROM feed_portfoliowarehouse)
                 AND story."scenarioID_id" = '{}'
                 ORDER BY story.published_date DESC
-                LIMIT 1000
+                LIMIT 2000
                 """.format(scenario)
     else:
         return None
@@ -440,7 +441,6 @@ def generate_feed(scenario, mode):
         return None
 
     logging.info("Inserting {} data".format(articles.shape[0]))
-
     values = [tuple(row) for row in articles.itertuples(index=False)]
     insert_values(query, values)
 
@@ -456,8 +456,8 @@ def test_feed():
     * Historic
     """
 
-    scenario = 'a8563fe4-f348-4a53-9c1c-07f47a5f7660'
-    mode = 'portfolio'
+    scenario = 'd3ef747b-1c3e-4582-aecb-eacee1cababe'
+    mode = 'auto'
 
     generate_feed(scenario, mode)
 
@@ -483,6 +483,3 @@ def feed(event, context):
         generate_feed(data["scenario"], data["mode"])
     else:
         logging.info("message format broken")
-
-
-test_feed()

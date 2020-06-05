@@ -4,6 +4,7 @@ import math
 import os
 import pandas as pd
 import time
+import psycopg2
 
 from google.cloud import pubsub_v1
 from datetime import datetime
@@ -35,12 +36,14 @@ def similarity(str1, str2):
         return 0
 
 
-def delete(query):
-
+def delete_feed(query):
+    """
+    Delete feed if new model exists
+    """
     conn = psycopg2.connect(
-        database="dbasename", user="username",
-        password='your_password', host='web_address',
-        port='your_port')
+        database=DB_NAME, user=DB_USER,
+        password=DB_PASSWORD, host=DB_HOST,
+        port=DB_PORT)
     cursor = conn.cursor()
     cursor.execute(query)
     conn.commit()
