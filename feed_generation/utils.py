@@ -35,6 +35,18 @@ def similarity(str1, str2):
         return 0
 
 
+def delete(query):
+
+    conn = psycopg2.connect(
+        database="dbasename", user="username",
+        password='your_password', host='web_address',
+        port='your_port')
+    cursor = conn.cursor()
+    cursor.execute(query)
+    conn.commit()
+    cursor.close()
+
+
 def add_to_dataframe(articles, query, name=None):
     """
     Fetch entities of an article and insert that into
