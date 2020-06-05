@@ -194,7 +194,7 @@ def body_cleaning(text):
 
 def gen_text_dragnet(article, timeout):
     content, status_code = do_request(article[1])
-    body = body_cleaning(content[:8000])
+    body = content[:8000]
     return (article[0], body, status_code)
 
 
