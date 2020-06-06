@@ -48,14 +48,7 @@ def verify_format(params: dict):
 
 
 def test_index():
-    params = {'source_file': 'e008bcc4-d063-433b-9c16-1bfe2d581fd7-Renewable Energy/gdelt/2020-05-04T14:08:45Z-2020-06-03T14:08:45Z.json',
-              'entity_id': 'e008bcc4-d063-433b-9c16-1bfe2d581fd7',
-              'scenario_id': '0edd503a-810f-421e-b3cd-da9e506c3596',
-              'history_processed': 'false',
-              'last_tracked': '2020-06-03T14:08:45Z',
-              'storage_bucket': 'news_staging_bucket',
-              'source': 'gdelt'}
-
+    params = {}
     storage_client = storage.Client()
     bucket = storage_client.bucket(BUCKET_NAME)
     index_file(bucket, params)
@@ -85,7 +78,6 @@ def index(event, context):
         return
 
     if params:
-        logging.info(params)
         response = index_file(bucket, params)
         logging.info(response)
         if response:
@@ -95,6 +87,3 @@ def index(event, context):
             logging.info("can't ack message")
     else:
         logging.info("message format broken")
-
-
-test_index()

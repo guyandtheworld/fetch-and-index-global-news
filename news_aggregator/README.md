@@ -23,6 +23,7 @@ gcloud pubsub topics publish news_aggregator_test --message '{
 }'
 ```
 
+'{"source": ["gdelt"], "entity_id": "e008bcc4-d063-433b-9c16-1bfe2d581fd7", "common_names": ["green energy", "sustainable energy", "renewable energy"], "entity_name": "Renewable Energy", "date_to": "2020-06-05T21:08:08Z", "history_processed": true, "storage_bucket": "news_staging_bucket", "scenario_id": "0edd503a-810f-421e-b3cd-da9e506c3596", "date_from": "2020-06-05T15:21:12Z"}'
 
 ## Testing locally
 

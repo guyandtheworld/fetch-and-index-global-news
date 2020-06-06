@@ -28,3 +28,6 @@ Deploy on Cloud Function
 "storage_bucket": "news_staging_bucket",
 "source": "google_news"}'
 `
+
+{'source_file': 'e008bcc4-d063-433b-9c16-1bfe2d581fd7-Renewable Energy/gdelt/2020-06-05T15:21:12Z-2020-06-05T21:08:08Z.json', 'entity_id': 'e008bcc4-d063-433b-9c16-1bfe2d581fd7',
+'scenario_id': '0edd503a-810f-421e-b3cd-da9e506c3596', 'history_processed': 'true', 'last_tracked': '2020-06-05T21:08:08Z', 'storage_bucket': 'news_staging_bucket', 'source': 'gdelt'}

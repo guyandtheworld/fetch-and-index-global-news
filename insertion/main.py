@@ -16,7 +16,7 @@ params = {
 }
 
 
-def insert_into_database(query, values):
+def insert_into_database(query, values, source):
     """
     insert values we get on the payload into the database
     """
@@ -40,7 +40,7 @@ def insert_into_database(query, values):
         if conn is not None:
             conn.close()
         resp = {"success": True,
-                "data": "inserted {} items into db".format(len(values))
+                "data": "inserted {} items into {}".format(len(values), source)
                 }
     return resp
 
@@ -74,7 +74,8 @@ def insertion(event, context):
         len(data["data"]), data["source"]))
 
     if data:
-        response = insert_into_database(data["query"], data["data"])
+        response = insert_into_database(
+            data["query"], data["data"], data["source"])
         logging.info(response)
         if response["success"]:
             logging.info(response["data"])

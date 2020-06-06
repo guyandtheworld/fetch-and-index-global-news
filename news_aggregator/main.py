@@ -53,14 +53,10 @@ def news_aggregator(event, context):
         return
 
     if params:
-        try:
-            logging.info("starting aggregation")
-            aggregator = Aggregator(params)
-            aggregator.load_sources()
-            if "write" not in params:
-                aggregator.write_data()
-        except Exception as e:
-            logging.info(
-                "message processing failed. up for retry. - " + str(e))
+        logging.info("Starting Aggregation")
+        aggregator = Aggregator(params)
+        aggregator.load_sources()
+        if "write" not in params:
+            aggregator.write_data()
     else:
         logging.info("message format broken")
