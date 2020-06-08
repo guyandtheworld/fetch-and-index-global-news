@@ -355,8 +355,9 @@ def generate_feed(scenario, mode):
                 on storymap."storyID_id" = story.uuid
                 INNER JOIN apis_storyentityref entityref
                 ON story."entityID_id" = entityref.uuid
-                WHERE story.uuid NOT IN
-                (SELECT "storyID" FROM feed_autowarehouse)
+                WHERE (story.uuid, storymap."entityID_id") NOT IN
+                (SELECT "storyID", "entityID" FROM feed_autowarehouse
+                group by "storyID", "entityID")
                 AND story."scenarioID_id" = '{}'
                 ORDER BY story.published_date DESC
                 LIMIT 5000
@@ -370,7 +371,7 @@ def generate_feed(scenario, mode):
                 INNER JOIN public.apis_entity entity
                 ON story."entityID_id" = entity.uuid
                 WHERE story.uuid NOT IN
-                (SELECT "storyID" FROM feed_portfoliowarehouse)
+                (SELECT distinct "storyID" FROM feed_portfoliowarehouse)
                 AND story."scenarioID_id" = '{}'
                 ORDER BY story.published_date DESC
                 LIMIT 2000
