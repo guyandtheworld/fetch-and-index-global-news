@@ -242,6 +242,7 @@ def insertion_cleaning(articles):
     articles["storyID"] = articles["storyID"].apply(str)
     articles["entityID_id"] = articles["entityID_id"].apply(str)
     articles["scenarioID_id"] = articles["scenarioID_id"].apply(str)
+    articles["body"] = articles["body"].str[:1000]
 
     def jsonify(x): return json.dumps(x)
 
@@ -359,6 +360,7 @@ def generate_feed(scenario, mode):
                 (SELECT "storyID", "entityID" FROM feed_autowarehouse
                 group by "storyID", "entityID")
                 AND story."scenarioID_id" = '{}'
+                AND "language" in ('english', 'US', 'CA', 'AU', 'IE')
                 ORDER BY story.published_date DESC
                 LIMIT 5000
                 """.format(scenario)
@@ -373,6 +375,7 @@ def generate_feed(scenario, mode):
                 WHERE story.uuid NOT IN
                 (SELECT distinct "storyID" FROM feed_portfoliowarehouse)
                 AND story."scenarioID_id" = '{}'
+                AND "language" in ('english', 'US', 'CA', 'AU', 'IE')
                 ORDER BY story.published_date DESC
                 LIMIT 2000
                 """.format(scenario)

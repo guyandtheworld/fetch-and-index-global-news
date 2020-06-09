@@ -243,8 +243,8 @@ def insert_values(query, values):
     ref = dict({"num_messages": 0})
 
     # deliver only maximum of 1000 stories at once
-    for i in range(0, len(values), 1000):
-        sliced_values = values[i:i+1000]
+    for i in range(0, len(values), 500):
+        sliced_values = values[i:i+500]
 
         payload["data"] = sliced_values
 
