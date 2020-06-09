@@ -143,6 +143,12 @@ def join_bucket_scores(articles, scenario):
 
     model_id = pd.read_sql(query.format(scenario, scenario), connection)
 
+    # if no model, empty scores and bucket scores
+    if len(model_id) == 0:
+        articles["buckets"] = [{} for _ in range(len(articles))]
+        articles["scores"] = [{"model": None} for _ in range(len(articles))]
+        return articles
+
     query = """
             SELECT "storyID_id", "bucketID_id", "grossScore",
             src.score as "sourceScore"
@@ -278,6 +284,10 @@ def new_model_exists(scenario, mode):
             """
 
     model_id = pd.read_sql(query.format(scenario, scenario), connection)
+
+    # if table is empty
+    if len(model_id) == 0:
+        return False
 
     latest_model = str(model_id.iloc[0]["uuid"])
 

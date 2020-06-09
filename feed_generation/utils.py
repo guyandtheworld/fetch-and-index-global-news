@@ -141,11 +141,10 @@ def hotness(article, mode):
               "general_decayed": round(decayedBaseScore, 3)}
 
     # generate baseScore and decayedBaseScore for buckets
-    for bucket in article["buckets"]:
-        bucket_id = list(bucket.keys())[0]
+    for bucket_id, bucket_score in article["buckets"].items():
 
         # bucket score
-        s += (bucket[bucket_id] * 100)
+        s += (bucket_score * 100)
 
         baseScore = math.log(max(s, 1))
 
@@ -174,11 +173,13 @@ def format_bucket_scores(scores):
     story_map = {}
 
     scores["score_map"] = scores.apply(
-        lambda x: {str(x["bucketID_id"]): round(x["grossScore"], 3)}, axis=1)
+        lambda x: [str(x["bucketID_id"]), round(x["grossScore"], 3)], axis=1)
 
     for i in scores['storyID_id'].unique():
-        temp = scores[scores['storyID_id'] == i]
-        story_map[str(i)] = temp["score_map"].tolist()
+        rows = scores[scores['storyID_id'] == i]
+        story_scores = rows["score_map"].tolist()
+        score_map = {score[0]: score[1] for score in story_scores}
+        story_map[str(i)] = score_map
 
     return story_map
 
