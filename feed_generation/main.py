@@ -12,7 +12,8 @@ from utils import (add_to_dataframe,
                    format_source_scores,
                    generate_story_entities,
                    hotness,
-                   insert_values)
+                   insert_values,
+                   select)
 
 
 logging.basicConfig(level=logging.INFO)
@@ -146,7 +147,8 @@ def join_bucket_scores(articles, scenario):
     # if no model, empty scores and bucket scores
     if len(model_id) == 0:
         articles["buckets"] = [{} for _ in range(len(articles))]
-        articles["scores"] = [{"model": None} for _ in range(len(articles))]
+        articles["scores"] = [{"model": "no_model"}
+                              for _ in range(len(articles))]
         return articles
 
     query = """
@@ -283,13 +285,11 @@ def new_model_exists(scenario, mode):
             and "scenarioID_id" = '{}'
             """
 
-    model_id = pd.read_sql(query.format(scenario, scenario), connection)
+    latest_model = select(query.format(scenario, scenario))
 
     # if table is empty
-    if len(model_id) == 0:
+    if latest_model is None:
         return False
-
-    latest_model = str(model_id.iloc[0]["uuid"])
 
     if mode == "auto":
         query = """
@@ -302,21 +302,16 @@ def new_model_exists(scenario, mode):
                 where "scenarioID" = '{}'
                 """
 
-    model_id = pd.read_sql(query.format(scenario), connection)
+    existing_model = select(query.format(scenario))
 
     # if table is empty
-    if len(model_id) == 0:
-        return False
-
-    existing_model = model_id.iloc[0]["uuid"]
-
     if existing_model is None:
         return False
 
     logging.info(
         "comparing {} with {}".format(latest_model, existing_model))
 
-    if latest_model != str(existing_model):
+    if latest_model[0] != existing_model[0]:
         return True
 
     return False
@@ -470,7 +465,9 @@ def test_feed():
     * Historic
     """
 
-    scenario = 'd3ef747b-1c3e-4582-aecb-eacee1cababe'
+    # scenario = 'd3ef747b-1c3e-4582-aecb-eacee1cababe'
+    scenario = '70f50dc4-e8f8-444c-8a36-a10c7786902e'
+
     mode = 'auto'
 
     generate_feed(scenario, mode)

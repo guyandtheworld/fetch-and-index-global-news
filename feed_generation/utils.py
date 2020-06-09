@@ -24,6 +24,13 @@ DB_PASSWORD = os.environ["DB_PASSWORD"]
 DB_HOST = os.environ["DB_HOST"]
 DB_PORT = os.environ["DB_PORT"]
 
+params = {
+    'database': os.environ["DB_NAME"],
+    'user': os.environ["DB_USER"],
+    'password': os.environ["DB_PASSWORD"],
+    'host': os.environ["DB_HOST"],
+    'port': os.environ["DB_PORT"],
+}
 
 connstr = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
 connection = create_engine(connstr)
@@ -36,14 +43,24 @@ def similarity(str1, str2):
         return 0
 
 
+def select(query):
+    """
+    Connect to the PostgreSQL database server
+    """
+    conn = psycopg2.connect(**params)
+    cur = conn.cursor()
+    logging.info('running : {}'.format(query))
+    cur.execute(query)
+    results = cur.fetchone()
+    cur.close()
+    return results
+
+
 def delete_feed(query):
     """
     Delete feed if new model exists
     """
-    conn = psycopg2.connect(
-        database=DB_NAME, user=DB_USER,
-        password=DB_PASSWORD, host=DB_HOST,
-        port=DB_PORT)
+    conn = psycopg2.connect(**params)
     cursor = conn.cursor()
     cursor.execute(query)
     conn.commit()
