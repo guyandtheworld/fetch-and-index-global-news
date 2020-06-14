@@ -141,7 +141,7 @@ def hotness(article, mode):
 
     # presence of keyword in body
     s += presence_score(keyword.lower(),
-                        article["body"].lower(),
+                        article["body"][:280].lower(),
                         "body")
 
     baseScore = math.log(max(s, 1))
