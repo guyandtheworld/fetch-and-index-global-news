@@ -360,7 +360,7 @@ def generate_feed(scenario, mode):
                 INNER JOIN apis_story story
                 on storymap."storyID_id" = story.uuid
                 INNER JOIN apis_storyentityref entityref
-                ON story."entityID_id" = entityref.uuid
+                ON storymap."entityID_id" = entityref.uuid
                 WHERE (story.uuid, storymap."entityID_id") NOT IN
                 (SELECT "storyID", "entityID" FROM feed_autowarehouse
                 group by "storyID", "entityID")
@@ -466,9 +466,9 @@ def test_feed():
     """
 
     # scenario = 'd3ef747b-1c3e-4582-aecb-eacee1cababe'
-    scenario = '70f50dc4-e8f8-444c-8a36-a10c7786902e'
+    scenario = 'a8563fe4-f348-4a53-9c1c-07f47a5f7660'
 
-    mode = 'auto'
+    mode = 'portfolio'
 
     generate_feed(scenario, mode)
 

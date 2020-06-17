@@ -5,6 +5,7 @@ import os
 import pandas as pd
 import time
 import psycopg2
+import re
 
 from google.cloud import pubsub_v1
 from datetime import datetime
@@ -34,13 +35,6 @@ params = {
 
 connstr = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
 connection = create_engine(connstr)
-
-
-def similarity(str1, str2):
-    if str1 in str2:
-        return KEYWORD_SCORE
-    else:
-        return 0
 
 
 def select(query):
@@ -106,9 +100,18 @@ def generate_story_entities(entities):
     return story_map
 
 
+def similarity(keyword, text):
+    """
+    Generates score based on the number of times keywords
+    appear on the text body
+    """
+    count = sum(1 for _ in re.finditer(r'\b%s\b' % re.escape(keyword), text))
+    return count * KEYWORD_SCORE
+
+
 def presence_score(keyword, text, analytics_type):
     """
-    gives score to the article based on the presence of
+    Gives score to the article based on the presence of
     relevant keyword in the content and the body
     """
     score = similarity(keyword, text)
@@ -124,7 +127,10 @@ def hotness(article, mode):
     Adding to score if the company term is in title
     * domain score - domain reliability
     """
-    s = article["title_sentiment"]["compound"]
+    title_sentiment = article["title_sentiment"]["compound"]
+    body_sentiment = article["body_sentiment"]["compound"]
+
+    s = (title_sentiment + body_sentiment)/2
 
     if mode == "portfolio":
         keyword = article["search_keyword"]
@@ -132,49 +138,27 @@ def hotness(article, mode):
         keyword = article["entity_name"]
 
     # negative news
-    s = -s * 50
+    s = -s * 30 + 30
 
     # presence of keyword in title
-    s += presence_score(keyword.lower(),
-                        article["title"].lower(),
+    s += presence_score(keyword.lower(), article["title"].lower(),
                         "title")
 
     # presence of keyword in body
-    s += presence_score(keyword.lower(),
-                        article["body"][:280].lower(),
+    s += presence_score(keyword.lower(), article["body"].lower(),
                         "body")
 
     baseScore = math.log(max(s, 1))
-
-    timeDiff = (datetime.now() - article["published_date"]).days
-
-    if (timeDiff >= 1):
-        x = timeDiff - 1
-        decayedBaseScore = baseScore * math.exp(-.01 * x * x)
-    else:
-        decayedBaseScore = baseScore
-
-    scores = {"general": round(baseScore, 3),
-              "general_decayed": round(decayedBaseScore, 3)}
+    scores = {"general": round(baseScore, 3)}
 
     # generate baseScore and decayedBaseScore for buckets
     for bucket_id, bucket_score in article["buckets"].items():
 
         # bucket score
-        s += (bucket_score * 100)
+        s += (bucket_score * 50)
 
         baseScore = math.log(max(s, 1))
-
-        timeDiff = (datetime.now() - article["published_date"]).days
-
-        if (timeDiff >= 1):
-            x = timeDiff - 1
-            decayedBaseScore = baseScore * math.exp(-.01 * x * x)
-        else:
-            decayedBaseScore = baseScore
-
         scores["{}".format(bucket_id)] = round(baseScore, 3)
-        scores["{}_decayed".format(bucket_id)] = round(decayedBaseScore, 3)
 
     return scores
 
