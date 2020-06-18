@@ -106,6 +106,10 @@ def similarity(keyword, text):
     appear on the text body
     """
     count = sum(1 for _ in re.finditer(r'\b%s\b' % re.escape(keyword), text))
+
+    if len(keyword) < 4 and count > 2:
+        return 30
+
     return count * KEYWORD_SCORE
 
 
@@ -130,7 +134,7 @@ def hotness(article, mode):
     title_sentiment = article["title_sentiment"]["compound"]
     body_sentiment = article["body_sentiment"]["compound"]
 
-    s = (title_sentiment + body_sentiment)/2
+    s = (title_sentiment + body_sentiment) / 2
 
     if mode == "portfolio":
         keyword = article["search_keyword"]
@@ -138,7 +142,7 @@ def hotness(article, mode):
         keyword = article["entity_name"]
 
     # negative news
-    s = -s * 30 + 30
+    s = -s * 50 + 50
 
     # presence of keyword in title
     s += presence_score(keyword.lower(), article["title"].lower(),
